@@ -1,26 +1,85 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* House OHANA カラーパレット: 温かく、落ち着いた印象を優先 */
+  --color-ivory: #faf7f1;
+  --color-beige: #f1e8da;
+  --color-beige-dark: #e3d5bd;
+  --color-brown: #8a6b4f;
+  --color-brown-light: #efe4d6;
+  --color-green: #4d6656;
+  --color-green-dark: #33453a;
+  --color-green-light: #e5ece6;
+  --color-gray: #6f6b62;
+  --color-gray-light: #eeece7;
+  --color-ink: #2c2a25;
+  --color-white: #ffffff;
+
+  --background: var(--color-ivory);
+  --foreground: var(--color-ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-ohana-ivory: var(--color-ivory);
+  --color-ohana-beige: var(--color-beige);
+  --color-ohana-beige-dark: var(--color-beige-dark);
+  --color-ohana-brown: var(--color-brown);
+  --color-ohana-brown-light: var(--color-brown-light);
+  --color-ohana-green: var(--color-green);
+  --color-ohana-green-dark: var(--color-green-dark);
+  --color-ohana-green-light: var(--color-green-light);
+  --color-ohana-gray: var(--color-gray);
+  --color-ohana-gray-light: var(--color-gray-light);
+  --color-ohana-ink: var(--color-ink);
+  --color-ohana-white: var(--color-white);
+
+  --font-sans: var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic",
+    sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* フォーカス表示は常に維持する（アクセシビリティ要件） */
+:focus-visible {
+  outline: 3px solid var(--color-ohana-green);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
 }
