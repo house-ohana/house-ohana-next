@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
 import Notice from "@/components/Notice";
 import ContactForm from "@/components/ContactForm";
-import { parseDiagnosisResultPath, type DiagnosisSearchParams } from "@/lib/diagnosis/schema";
+import type { DiagnosisSearchParams } from "@/lib/diagnosis/schema";
+import { parseAnyDiagnosisResultPath } from "@/lib/diagnosis/resultLink";
 
 export const metadata: Metadata = {
   title: "お問い合わせ",
@@ -19,7 +20,7 @@ export default async function ContactPage({ searchParams }: Props) {
   const rawResult = Array.isArray(params.result) ? params.result[0] : params.result;
   // "result" は診断結果ページの相対パスのみを受け付ける（診断内容そのものは引き継がない）。
   // 結果ページの「この結果をもとに相談する」ボタンが明示的にこのクエリパラメータを付与する。
-  const diagnosisResultPath = parseDiagnosisResultPath(rawResult);
+  const diagnosisResultPath = parseAnyDiagnosisResultPath(rawResult);
 
   return (
     <div>
