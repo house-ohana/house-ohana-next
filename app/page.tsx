@@ -116,8 +116,10 @@ export default function Home() {
             自宅に戻る、住み替える、施設へ入る。実家を残す、管理する、貸す、売る。House
             OHANAは、ご本人の希望とご家族の現実を一緒に整理し、納得して次の一歩を選ぶためのお手伝いをします。
           </p>
-          <div className="flex flex-wrap gap-4 pt-2">
-            <PrimaryButton href="/diagnosis">3分で今の状況を整理する</PrimaryButton>
+          <div className="flex flex-wrap items-center gap-4 pt-2">
+            <PrimaryButton href="/diagnosis" size="lg">
+              今すぐ状況を整理
+            </PrimaryButton>
             <SecondaryButton href="/about">House OHANAについて知る</SecondaryButton>
           </div>
           <Link
@@ -302,7 +304,7 @@ export default function Home() {
           自宅へ戻るか、施設へ入るか。実家を残すか、別の方法を考えるか。House
           OHANAは、何かを契約する前に、本人と家族が考えるべきことを整理します。
         </p>
-        <PrimaryButton href="/diagnosis">3分で今の状況を整理する</PrimaryButton>
+        <PrimaryButton href="/diagnosis">今すぐ状況を整理</PrimaryButton>
       </section>
     </div>
   );

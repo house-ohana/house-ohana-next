@@ -117,7 +117,7 @@ export default function FamilyPage() {
             状況を整理するところから、一緒に始めてみませんか。
           </p>
           <div>
-            <PrimaryButton href="/diagnosis">3分で今の状況を整理する</PrimaryButton>
+            <PrimaryButton href="/diagnosis">今すぐ状況を整理</PrimaryButton>
           </div>
         </section>
       </div>

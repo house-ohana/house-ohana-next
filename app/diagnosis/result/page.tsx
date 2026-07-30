@@ -4,8 +4,9 @@ import DiagnosisResultSections from "@/components/DiagnosisResultSections";
 import DiagnosisInvalid from "@/components/DiagnosisInvalid";
 import DiagnosisResultSectionsPre from "@/components/DiagnosisResultSectionsPre";
 import DiagnosisInvalidPre from "@/components/DiagnosisInvalidPre";
+import ScrollToTopOnMount from "@/components/ScrollToTopOnMount";
 import { buildDiagnosisResultPath, decodeDiagnosisParams, type DiagnosisSearchParams } from "@/lib/diagnosis/schema";
-import { buildDiagnosisSummary } from "@/lib/diagnosis/logic";
+import { buildDiagnosisResult } from "@/lib/diagnosis/logic";
 import { buildPreResultPath, decodePreParams } from "@/lib/diagnosis/pre/schema";
 import { buildPreResult } from "@/lib/diagnosis/pre/logic";
 import { resolveDiagnosisMode } from "@/lib/diagnosis/mode";
@@ -41,22 +42,24 @@ export default async function DiagnosisResultPage({ searchParams }: Props) {
     if (!decoded.ok) {
       return (
         <div>
-          <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" />
+          <ScrollToTopOnMount />
+          <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" compact />
           <DiagnosisInvalidPre reason={decoded.reason} />
         </div>
       );
     }
 
-    const result = buildPreResult(decoded.who, decoded.answers);
+    const preResult = buildPreResult(decoded.who, decoded.answers);
     // 受け取ったクエリをそのまま使わず、検証済みの回答から正規のパスを組み立て直す
     // （余計なパラメータを含めない、URLを必要以上に長くしないため）
     const resultPath = buildPreResultPath(decoded.who, decoded.answers, decoded.version);
 
     return (
       <div>
-        <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" />
-        <section className="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8">
-          <DiagnosisResultSectionsPre result={result} resultPath={resultPath} />
+        <ScrollToTopOnMount />
+        <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" compact />
+        <section className="mx-auto w-full max-w-3xl px-5 py-8 sm:px-8">
+          <DiagnosisResultSectionsPre result={preResult} resultPath={resultPath} />
         </section>
       </div>
     );
@@ -67,22 +70,24 @@ export default async function DiagnosisResultPage({ searchParams }: Props) {
   if (!decoded.ok) {
     return (
       <div>
-        <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" />
+        <ScrollToTopOnMount />
+        <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" compact />
         <DiagnosisInvalid reason={decoded.reason} />
       </div>
     );
   }
 
-  const summary = buildDiagnosisSummary(decoded.answers);
+  const result = buildDiagnosisResult(decoded.answers);
   // 受け取ったクエリをそのまま使わず、検証済みの回答から正規のパスを組み立て直す
   // （余計なパラメータを含めない、URLを必要以上に長くしないため）
   const resultPath = buildDiagnosisResultPath(decoded.answers, decoded.version);
 
   return (
     <div>
-      <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" />
-      <section className="mx-auto w-full max-w-3xl px-5 py-12 sm:px-8">
-        <DiagnosisResultSections summary={summary} resultPath={resultPath} />
+      <ScrollToTopOnMount />
+      <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" compact />
+      <section className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 sm:py-8">
+        <DiagnosisResultSections result={result} resultPath={resultPath} />
       </section>
     </div>
   );

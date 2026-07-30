@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DIAGNOSIS_QUESTIONS } from "@/lib/diagnosis/questions";
 import { buildDiagnosisResultPath } from "@/lib/diagnosis/schema";
@@ -12,6 +12,13 @@ export default function DiagnosisWizard() {
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState<DiagnosisAnswers>({});
   const [isNavigating, setIsNavigating] = useState(false);
+  const headingRef = useRef<HTMLDivElement>(null);
+
+  // 設問番号が変わったとき（intro→question含む）だけ、見出し先頭へスクロールする。
+  // 選択肢を選ぶ操作（answersの更新）では発火しない。
+  useEffect(() => {
+    headingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [stage, stepIndex]);
 
   const totalQuestions = DIAGNOSIS_QUESTIONS.length;
   const question = DIAGNOSIS_QUESTIONS[stepIndex];
@@ -50,7 +57,7 @@ export default function DiagnosisWizard() {
 
   if (stage === "intro") {
     return (
-      <div className="flex flex-col gap-6">
+      <div ref={headingRef} className="flex scroll-mt-20 flex-col gap-6">
         <p className="text-base leading-loose text-ohana-gray sm:text-lg">
           {totalQuestions}問の質問にお答えいただくと、現在の状況を4つの視点に整理してご案内します。医療・介護・法律・税務・不動産の判断や診断ではありません。
         </p>
@@ -74,7 +81,7 @@ export default function DiagnosisWizard() {
   const canProceed = selected.length > 0;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div ref={headingRef} className="flex scroll-mt-20 flex-col gap-6">
       <div>
         <p className="mb-2 text-sm font-semibold text-ohana-brown" aria-live="polite">
           質問 {stepIndex + 1} / {totalQuestions}
