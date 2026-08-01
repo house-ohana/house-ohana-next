@@ -3,7 +3,7 @@ import PageHero from "@/components/PageHero";
 import DiagnosisWizard from "@/components/DiagnosisWizard";
 import DiagnosisWizardPre from "@/components/DiagnosisWizardPre";
 import DiagnosisModeSelect from "@/components/DiagnosisModeSelect";
-import type { DiagnosisSearchParams } from "@/lib/diagnosis/schema";
+import type { PostSearchParams } from "@/lib/diagnosis/post/schema";
 
 export const metadata: Metadata = {
   title: "3分整理ナビ",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: Promise<DiagnosisSearchParams>;
+  searchParams: Promise<PostSearchParams>;
 };
 
 export default async function DiagnosisPage({ searchParams }: Props) {

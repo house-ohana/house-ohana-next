@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PageHero from "@/components/PageHero";
 import Notice from "@/components/Notice";
 import ContactForm from "@/components/ContactForm";
-import type { DiagnosisSearchParams } from "@/lib/diagnosis/schema";
+import type { PostSearchParams } from "@/lib/diagnosis/post/schema";
 import { parseAnyDiagnosisResultPath } from "@/lib/diagnosis/resultLink";
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: Promise<DiagnosisSearchParams>;
+  searchParams: Promise<PostSearchParams>;
 };
 
 export default async function ContactPage({ searchParams }: Props) {

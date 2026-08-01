@@ -5,16 +5,16 @@ import DiagnosisInvalid from "@/components/DiagnosisInvalid";
 import DiagnosisResultSectionsPre from "@/components/DiagnosisResultSectionsPre";
 import DiagnosisInvalidPre from "@/components/DiagnosisInvalidPre";
 import ScrollToTopOnMount from "@/components/ScrollToTopOnMount";
-import { buildDiagnosisResultPath, decodeDiagnosisParams, type DiagnosisSearchParams } from "@/lib/diagnosis/schema";
-import { buildDiagnosisResult } from "@/lib/diagnosis/logic";
+import { buildPostResultPath, decodePostParams, type PostSearchParams } from "@/lib/diagnosis/post/schema";
+import { buildPostResult } from "@/lib/diagnosis/post/logic";
 import { buildPreResultPath, decodePreParams } from "@/lib/diagnosis/pre/schema";
 import { buildPreResult } from "@/lib/diagnosis/pre/logic";
 import { resolveDiagnosisMode } from "@/lib/diagnosis/mode";
 
 // このページの内容はURLの回答コードによって変わるが、タイトル・説明文・OGP情報は
-// 回答にかかわらず常に一般的な内容に固定する（診断結果をメタデータへ含めない）。
+// 回答にかかわらず常に一般的な内容に固定する(診断結果をメタデータへ含めない)。
 // noindexは検索結果に載せないための設定であり、プライバシー保護のためのものではない
-// （URLを知っている第三者は引き続きページを閲覧できる）。
+// (URLを知っている第三者は引き続きページを閲覧できる)。
 export const metadata: Metadata = {
   title: "3分整理ナビの結果",
   description: "ご家族の現在の状況と、次に確認したいことを整理したページです。",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: Promise<DiagnosisSearchParams>;
+  searchParams: Promise<PostSearchParams>;
 };
 
 export default async function DiagnosisResultPage({ searchParams }: Props) {
@@ -51,7 +51,7 @@ export default async function DiagnosisResultPage({ searchParams }: Props) {
 
     const preResult = buildPreResult(decoded.who, decoded.answers);
     // 受け取ったクエリをそのまま使わず、検証済みの回答から正規のパスを組み立て直す
-    // （余計なパラメータを含めない、URLを必要以上に長くしないため）
+    // (余計なパラメータを含めない、URLを必要以上に長くしないため)
     const resultPath = buildPreResultPath(decoded.who, decoded.answers, decoded.version);
 
     return (
@@ -65,7 +65,7 @@ export default async function DiagnosisResultPage({ searchParams }: Props) {
     );
   }
 
-  const decoded = decodeDiagnosisParams(params);
+  const decoded = decodePostParams(params);
 
   if (!decoded.ok) {
     return (
@@ -77,10 +77,9 @@ export default async function DiagnosisResultPage({ searchParams }: Props) {
     );
   }
 
-  const result = buildDiagnosisResult(decoded.answers);
+  const result = buildPostResult(decoded.answers);
   // 受け取ったクエリをそのまま使わず、検証済みの回答から正規のパスを組み立て直す
-  // （余計なパラメータを含めない、URLを必要以上に長くしないため）
-  const resultPath = buildDiagnosisResultPath(decoded.answers, decoded.version);
+  const resultPath = buildPostResultPath(decoded.answers);
 
   return (
     <div>

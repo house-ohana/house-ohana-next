@@ -1,11 +1,11 @@
-import { parseDiagnosisResultPath } from "./schema";
+import { parsePostResultPath } from "./post/schema";
 import { buildPreResultPath, decodePreParams, PRE_RESULT_PATH, type PreSearchParams } from "./pre/schema";
 import { resolveDiagnosisMode } from "./mode";
 
 /**
  * 事後ブランチ（m=post・またはmなし）と平時ブランチ（m=pre）の両方の診断結果URLを
  * 検証・正規化する。他ページ（お問い合わせ等）へ引き継ぐ際の入口はここに一本化する。
- * 事後ブランチ側のデコード処理（lib/diagnosis/schema.ts）は変更しない。
+ * 事後ブランチ側のデコード処理（lib/diagnosis/post/schema.ts）は変更しない。
  */
 export function parseAnyDiagnosisResultPath(raw: string | undefined | null): string | null {
   if (!raw || raw.length > 300) return null;
@@ -32,5 +32,5 @@ export function parseAnyDiagnosisResultPath(raw: string | undefined | null): str
     return buildPreResultPath(decoded.who, decoded.answers, decoded.version);
   }
 
-  return parseDiagnosisResultPath(raw);
+  return parsePostResultPath(raw);
 }

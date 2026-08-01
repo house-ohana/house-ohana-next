@@ -9,7 +9,7 @@ type Props = {
 
 // 共有時のtitle/textは診断内容を含まない一般的な文言のみ。回答の要約は生成しない。
 const SHARE_TITLE = "House OHANA｜3分整理ナビの整理結果";
-const SHARE_TEXT = "3分整理ナビの整理結果です。";
+const SHARE_TEXT = "House OHANAの3分整理ナビで、退院後の暮らしと家族が確認することを整理しました。";
 
 // navigator.shareの有無はブラウザ（外部システム）の状態のため、
 // useSyncExternalStoreでサーバー描画時はfalse、クライアントでは実際の対応状況を読み取る。
