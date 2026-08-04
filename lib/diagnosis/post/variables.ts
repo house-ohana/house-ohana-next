@@ -25,7 +25,9 @@ export function computePostVariables(answers: PostValidAnswers) {
 
   const homeWillRemain = !noHome && (q6 === "will_be_vacant" || q6 === "already_vacant" || q6 === "may_return");
 
-  const homeActionExpected = !noHome && (q6 === "will_be_vacant" || q6 === "already_vacant" || q7 === "consider_home_income");
+  // 「空き家になる」（q6）ことと、「売る・貸すことを考えている」（q7=consider_home_income）ことは別。
+  // 契約（売る・貸す）に関する案内は、実際にその意向がある場合にのみ表示する。
+  const homeActionExpected = !noHome && q7 === "consider_home_income";
 
   const contractConcern = q9 === "fluctuates" || q9 === "seems_difficult";
   const contractStatusUnknown = q9 === "not_confirmed" || q9 === "unknown";
@@ -33,7 +35,10 @@ export function computePostVariables(answers: PostValidAnswers) {
   const moneyUnclear = q7 === "unknown_amount" || q7 === "unknown";
   const familyContribution = q7 === "family_pays" || q7 === "mixed";
 
-  const supporterRisk = q8 === "mostly_one_person" || q8 === "few_supporters";
+  // 「主に一人が担っている」と「身寄りや頼れる人が少ない」は、必要な行動が異なるため分離する。
+  const singleMainSupporter = q8 === "mostly_one_person";
+  const fewSupporters = q8 === "few_supporters";
+  const supporterRisk = singleMainSupporter || fewSupporters;
 
   const atHomeDirection = q3 === "return_home" || q3 === "temporary_home";
 
@@ -70,6 +75,8 @@ export function computePostVariables(answers: PostValidAnswers) {
     contractStatusUnknown,
     moneyUnclear,
     familyContribution,
+    singleMainSupporter,
+    fewSupporters,
     supporterRisk,
     atHomeDirection,
     hospitalizedSupportGap,

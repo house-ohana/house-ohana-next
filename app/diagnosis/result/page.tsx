@@ -36,6 +36,16 @@ export default async function DiagnosisResultPage({ searchParams }: Props) {
   const params = await searchParams;
   const mode = resolveDiagnosisMode(params.m);
 
+  if (mode === "invalid") {
+    return (
+      <div>
+        <ScrollToTopOnMount />
+        <PageHero eyebrow="Diagnosis" title="3分整理ナビの結果" compact />
+        <DiagnosisInvalid reason="invalid_mode" />
+      </div>
+    );
+  }
+
   if (mode === "pre") {
     const decoded = decodePreParams(params);
 

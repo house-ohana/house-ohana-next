@@ -131,7 +131,7 @@ describe("ケース4: 実家を売却検討・契約理解に波がある", () =
   });
 });
 
-describe("ケース5: 契約理解が分からない", () => {
+describe("ケース5: 契約理解が分からない（実家を売る・貸す意向がある場合）", () => {
   const result = buildPostResult(
     answers({
       q1: "discharged",
@@ -140,7 +140,7 @@ describe("ケース5: 契約理解が分からない", () => {
       q4: "arranged",
       q5: "wants_home",
       q6: "will_be_vacant",
-      q7: "likely_sufficient",
+      q7: "consider_home_income",
       q9: "not_confirmed",
     }),
   );
@@ -401,6 +401,76 @@ describe("ケース17: 旧URL・不正なQ1/Q2組み合わせ", () => {
 
   test("例外を投げず、常にok:falseで返す", () => {
     assert.doesNotThrow(() => decodePostParams({}));
+  });
+});
+
+describe("ケース18: 施設探し中・1週間以内・支援未調整（Phase1回帰: 病院誤案内の防止）", () => {
+  // 1-1: !isDischarged による誤判定で、施設探し中の人にも「病院の退院支援担当者」が
+  // 最優先表示されていたバグの回帰テスト。q1=hospitalizedのケース1と対になる。
+  const result = buildPostResult(
+    answers({ q1: "facility_search", q2: "within_7_days", q3: "undecided", q4: "not_arranged" }),
+  );
+
+  test("病院ではなく、現在相談している担当者または地域包括支援センターを最初の行動にする", () => {
+    assert.doesNotMatch(result.firstAction.headline, /病院/);
+    assert.match(result.firstAction.headline, /3日以内/);
+    assert.match(result.firstAction.headline, /現在相談している担当者または地域包括支援センター/);
+  });
+
+  test("窓口カードにも病院を含めない", () => {
+    assert.ok(!result.contacts.some((c) => c.id === "hospital"));
+  });
+});
+
+describe("ケース19: 空き家になるが、売る・貸す意向はまだない（Phase1回帰: 空き家と契約意向の混同防止）", () => {
+  // 1-2: q6=will_be_vacant/already_vacant だけで「実家を売る・貸す契約」の案内が
+  // 出ていたバグの回帰テスト。契約理解への不安（q9）があっても、売却・賃貸の意向
+  // （q7=consider_home_income）が無ければ契約関連の文言を出してはならない。
+  const result = buildPostResult(
+    answers({
+      q1: "discharged",
+      q2: "mostly_settled",
+      q3: "temporary_home",
+      q6: "will_be_vacant",
+      q7: "likely_sufficient",
+      q9: "fluctuates",
+    }),
+  );
+
+  test("「実家を売る・貸す契約」に関する行動・窓口を表示しない", () => {
+    assert.doesNotMatch(result.firstAction.headline, /実家を売る・貸す契約/);
+    assert.ok(!result.contacts.some((c) => c.id === "legal"));
+  });
+
+  test("契約理解に関する注意点カード（contract_concern_with_home）を表示しない", () => {
+    const ids = result.insights.map((i) => i.id);
+    assert.ok(!ids.includes("contract_concern_with_home"));
+  });
+
+  test("空き家の管理案内は、売却意向がなくても引き続き表示する", () => {
+    const ids = result.insights.map((i) => i.id);
+    assert.ok(ids.includes("vacant_home_management"));
+  });
+});
+
+describe("ケース20: 身寄りが少ない・他に急ぐ条件がない（Phase1回帰: 家族会議フォールバックへの格下げ防止）", () => {
+  // 1-3: family_support_load が primaryPriority: 900 だったため、身寄りが少ない
+  // ケースでも常に真になる汎用フォールバック（2週間以内に家族で話す）へ落ちていたバグの回帰テスト。
+  const result = buildPostResult(answers({ q8: "few_supporters" }));
+
+  test("最初の行動が地域包括支援センターへの連絡になる（2週間以内の家族会議に落とさない）", () => {
+    assert.match(result.firstAction.headline, /地域包括支援センター/);
+    assert.match(result.firstAction.headline, /身寄りや頼れる人が少ない/);
+    assert.doesNotMatch(result.firstAction.headline, /2週間以内/);
+  });
+});
+
+describe("ケース21: 主に一人で支えている・他に急ぐ条件がない", () => {
+  const result = buildPostResult(answers({ q8: "mostly_one_person" }));
+
+  test("最初の行動が担当分けの案内になる（2週間以内の家族会議に落とさない）", () => {
+    assert.match(result.firstAction.headline, /一人で抱えている項目を分けて/);
+    assert.doesNotMatch(result.firstAction.headline, /2週間以内/);
   });
 });
 

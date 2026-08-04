@@ -31,8 +31,10 @@ export default async function DiagnosisPage({ searchParams }: Props) {
           <DiagnosisModeSelect />
         ) : rawMode === "pre" ? (
           <DiagnosisWizardPre />
-        ) : (
+        ) : rawMode === "post" ? (
           <DiagnosisWizard />
+        ) : (
+          <DiagnosisModeSelect />
         )}
       </section>
     </div>

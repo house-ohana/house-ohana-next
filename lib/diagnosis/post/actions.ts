@@ -35,7 +35,7 @@ export function buildActionCandidates(answers: PostValidAnswers, v: PostVariable
   return [
     {
       id: "p1_hospital",
-      when: v.isImmediateDeadline && (v.supportUnclear || v.residenceUnclear) && !isDischarged,
+      when: v.isImmediateDeadline && (v.supportUnclear || v.residenceUnclear) && answers.q1 === "hospitalized",
       primaryPriority: 1,
       dedupeGroup: "discharge_support",
       secondaryGroupOrder: SECONDARY_GROUP_ORDER.discharge_support,
@@ -59,7 +59,7 @@ export function buildActionCandidates(answers: PostValidAnswers, v: PostVariable
     },
     {
       id: "p2_hospital",
-      when: v.isImmediateDeadline && v.supportPartlyUnclear && !isDischarged,
+      when: v.isImmediateDeadline && v.supportPartlyUnclear && answers.q1 === "hospitalized",
       primaryPriority: 2,
       dedupeGroup: "discharge_support",
       secondaryGroupOrder: SECONDARY_GROUP_ORDER.discharge_support,
@@ -213,10 +213,23 @@ export function buildActionCandidates(answers: PostValidAnswers, v: PostVariable
       title: "続けたい暮らし・家族ができること・今は決めなくてよいことを話す",
     },
     {
-      id: "family_support_load",
-      when: v.supporterRisk,
-      // ②の一番目にはならない（常に真になるp12_family_talkより優先度を低くする）
-      primaryPriority: 900,
+      id: "p_few_supporters",
+      // 身寄りや頼れる人が少ない場合は、汎用の「家族で話す」フォールバック（p12, 常に真）より
+      // 優先させ、地域包括支援センターへの接続を最初の行動にできるようにする。
+      when: v.fewSupporters,
+      primaryPriority: 4.5,
+      dedupeGroup: "family_support_load",
+      secondaryGroupOrder: SECONDARY_GROUP_ORDER.family_support_load,
+      headline:
+        "3日以内に、ご本人の住所地を担当する地域包括支援センターへ「身寄りや頼れる人が少ない」と伝えてください。介護、生活支援、権利擁護など、頼れる相談先を一緒に整理してもらえます。",
+      deadline: "3日以内",
+      contact: "地域包括支援センター",
+      title: "身寄りや頼れる人が少ないことを伝え、頼れる相談先を整理する",
+    },
+    {
+      id: "p_single_main_supporter",
+      when: v.singleMainSupporter,
+      primaryPriority: 4.6,
       dedupeGroup: "family_support_load",
       secondaryGroupOrder: SECONDARY_GROUP_ORDER.family_support_load,
       headline: "3日以内に、家族内または地域包括支援センターへ連絡、通院、費用確認、実家管理のうち、一人で抱えている項目を分けてください。",

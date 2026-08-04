@@ -19,6 +19,8 @@ const MESSAGE_BY_REASON: Record<PostDecodeFailureReason, string> = {
     "回答の組み合わせを正しく読み取れませんでした。お手数ですが、実家に関する質問からもう一度お答えください。",
   future_not_supported:
     "この結果は、今すぐの対応より、これからの備えを整理する入り口に合っています。お手数ですが、下のボタンからやり直してください。",
+  invalid_mode:
+    "このURLの形式を認識できませんでした。お手数ですが、もう一度整理をお試しください。",
 };
 
 export default function DiagnosisInvalid({ reason }: Props) {

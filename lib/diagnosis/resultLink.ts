@@ -26,6 +26,8 @@ export function parseAnyDiagnosisResultPath(raw: string | undefined | null): str
 
   const mode = resolveDiagnosisMode(params.m);
 
+  if (mode === "invalid") return null;
+
   if (mode === "pre") {
     const decoded = decodePreParams(params);
     if (!decoded.ok) return null;

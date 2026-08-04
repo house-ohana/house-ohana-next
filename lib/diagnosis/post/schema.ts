@@ -42,7 +42,8 @@ export type PostDecodeFailureReason =
   | "incomplete"
   | "stage_mismatch"
   | "home_contradiction"
-  | "future_not_supported";
+  | "future_not_supported"
+  | "invalid_mode";
 
 export type PostDecodeResult = { ok: true; answers: PostValidAnswers } | { ok: false; reason: PostDecodeFailureReason };
 
