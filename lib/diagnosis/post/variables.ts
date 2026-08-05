@@ -100,6 +100,11 @@ export function computePostVariables(answers: PostValidAnswers) {
   const homeIntentUndecided = h1 === "undecided";
   const contractNotConfirmed = ct1 === "not_confirmed";
 
+  // 成果物層が「実家枝／契約枝に回答済みか」を判定する際、h1/ct1のraw undefinedチェックを
+  // 直接使わないようにするための派生フラグ。
+  const homeIntentAnswered = h1 !== undefined;
+  const contractUnderstandingAnswered = ct1 !== undefined;
+
   return {
     isImmediateDeadline,
     isNearDeadline,
@@ -143,5 +148,7 @@ export function computePostVariables(answers: PostValidAnswers) {
     contractAnswerUnknown,
     homeIntentUndecided,
     contractNotConfirmed,
+    homeIntentAnswered,
+    contractUnderstandingAnswered,
   };
 }
