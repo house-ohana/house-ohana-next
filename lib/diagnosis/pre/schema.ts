@@ -5,7 +5,7 @@ import type { PreAnswers, PreQuestionId, PreWho } from "./types";
  *
  * 設計方針（lib/diagnosis/schema.tsの事後ブランチと同じ考え方）:
  * - URLには短い許可コードのみを含める（質問文・自由記述を含めない）。
- * - 各設問の回答コードは docs/navi-result-mapping.md 第1節の a/b/c/d/e をそのまま使う
+ * - 各設問の回答コードは docs/reference/navi-result-mapping.md 第1節の a/b/c/d/e をそのまま使う
  *   （事後ブランチのようなvalue→1文字変換テーブルは不要。コード自体が既に1文字のため）。
  * - v=<number> で平時ブランチの質問セットのバージョンを管理する。post側のvとは
  *   独立したバージョン空間（m=preのときだけ参照される）。
@@ -32,7 +32,7 @@ const QUESTION_PARAM: Record<PreQuestionId, string> = {
   T5: "t5",
 };
 
-// 各設問で許可される回答コード（docs/navi-result-mapping.md 第1節と完全一致させる）
+// 各設問で許可される回答コード（docs/reference/navi-result-mapping.md 第1節と完全一致させる）
 const ALLOWED_CODES: Record<PreQuestionId, readonly string[]> = {
   Q1: ["a", "b", "c"],
   Q2: ["a", "b", "c"],

@@ -17,7 +17,7 @@ import {
 
 /**
  * 「3分整理ナビ｜平時ブランチ」（m=pre）結果ロジック。
- * docs/navi-result-mapping.md 第4章（特別ロジック）をそのまま実装したもの。
+ * docs/reference/navi-result-mapping.md 第4章（特別ロジック）をそのまま実装したもの。
  * ロジックを調整する場合は、必ず同文書を先に更新してからここを編集すること。
  */
 

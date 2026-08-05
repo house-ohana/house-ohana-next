@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-// docs/navi-result-mapping.md 第0節「入口の分岐」。
+// docs/reference/navi-result-mapping.md 第0節「入口の分岐」。
 // トップページ経由を必須にせず、/diagnosis へ直接アクセスした場合もここが最初に表示される。
 export default function DiagnosisModeSelect() {
   return (

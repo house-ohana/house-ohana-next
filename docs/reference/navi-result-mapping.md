@@ -542,7 +542,7 @@ Q8a の表示をそのまま使用。「介護離職」「リスク」「危険�
 ## 12. Claude Codeへの返答文（そのまま貼り付け可）
 
 ```
-docs/navi-result-mapping.md を v4 に更新しました。
+docs/reference/navi-result-mapping.md を v4 に更新しました。
 
 第11章に残っていた2件の未解決事項を確定しました。
 

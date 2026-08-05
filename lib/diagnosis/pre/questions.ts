@@ -2,7 +2,7 @@ import type { PreAnswers, PreQuestionId } from "./types";
 
 /**
  * 「3分整理ナビ｜平時ブランチ」（m=pre）の設問データ。
- * docs/navi-result-mapping.md 第1節（v4）をそのまま実装したもの。
+ * docs/reference/navi-result-mapping.md 第1節（v4）をそのまま実装したもの。
  * 文言・選択肢コード（a/b/c/d/e）は仕様書と完全に一致させること。
  */
 

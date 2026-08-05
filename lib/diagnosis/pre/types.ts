@@ -1,5 +1,5 @@
 // 「3分整理ナビ｜平時ブランチ」（m=pre）の型定義。
-// 仕様: docs/navi-result-mapping.md（v4・最終版）が唯一の正本。
+// 仕様: docs/reference/navi-result-mapping.md（v4・最終版）が唯一の正本。
 
 export type PreQuestionId =
   | "Q1"
