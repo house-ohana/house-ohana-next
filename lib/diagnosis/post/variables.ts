@@ -81,6 +81,16 @@ export function computePostVariables(answers: PostValidAnswers) {
   // 本人に持分がない名義（本人以外の名義）。本人所有を前提とするカードの対象外判定に使う。
   const ownershipOther = h2 === "other_owner";
 
+  // Phase3成果物専用（4-4「今回整理できたこと」／4-5「まだ確認できていないこと」）の派生フラグ。
+  // 回答値が文字通り「unknown」であることのみを表す。「まだ決まっていない／調整中／話せていない」等の
+  // 他の未確定状態（not_arranged/not_discussed/hard_to_confirm/unknown_amount等）とは区別する。
+  // 既存のsupportUnclear/wishesUnclear/moneyUnclearはこれらを一括りにしているため意味が異なり、
+  // 既存フラグの計算式・使用箇所（actions.ts/decisions.ts/insights.ts/contacts.ts/selfHelp.ts/
+  // consultation.ts）はこの追加によって一切変更しない。
+  const supportAnswerUnknown = c4 === "unknown";
+  const wishesAnswerUnknown = c5 === "unknown";
+  const moneyAnswerUnknown = c7 === "unknown";
+
   return {
     isImmediateDeadline,
     isNearDeadline,
@@ -115,5 +125,8 @@ export function computePostVariables(answers: PostValidAnswers) {
     ownershipUnclear,
     ownershipShared,
     ownershipOther,
+    supportAnswerUnknown,
+    wishesAnswerUnknown,
+    moneyAnswerUnknown,
   };
 }

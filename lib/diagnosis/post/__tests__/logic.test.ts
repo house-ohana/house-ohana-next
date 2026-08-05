@@ -739,3 +739,62 @@ describe("第23節 禁止表現の横断チェック", () => {
     });
   }
 });
+
+describe("Phase3準備: 成果物専用フラグ（回答値がliteralなunknownかどうか）", () => {
+  test("c4がunknownのときsupportAnswerUnknownはtrue", () => {
+    const v = computePostVariables(answers({ c4: "unknown" }));
+    assert.equal(v.supportAnswerUnknown, true);
+  });
+  test("c4がnot_arrangedのときsupportAnswerUnknownはfalse（既存supportUnclearとは異なる基準）", () => {
+    const v = computePostVariables(answers({ c4: "not_arranged" }));
+    assert.equal(v.supportAnswerUnknown, false);
+    assert.equal(v.supportUnclear, true);
+  });
+  test("c4がpartly_arrangedのときsupportAnswerUnknownはfalse", () => {
+    const v = computePostVariables(answers({ c4: "partly_arranged" }));
+    assert.equal(v.supportAnswerUnknown, false);
+  });
+  test("c4がarrangedのときsupportAnswerUnknownはfalse", () => {
+    const v = computePostVariables(answers({ c4: "arranged" }));
+    assert.equal(v.supportAnswerUnknown, false);
+  });
+
+  test("c5がunknownのときwishesAnswerUnknownはtrue", () => {
+    const v = computePostVariables(answers({ c5: "unknown" }));
+    assert.equal(v.wishesAnswerUnknown, true);
+  });
+  test("c5がnot_discussedのときwishesAnswerUnknownはfalse（既存wishesUnclearとは異なる基準）", () => {
+    const v = computePostVariables(answers({ c5: "not_discussed" }));
+    assert.equal(v.wishesAnswerUnknown, false);
+    assert.equal(v.wishesUnclear, true);
+  });
+  test("c5がhard_to_confirmのときwishesAnswerUnknownはfalse", () => {
+    const v = computePostVariables(answers({ c5: "hard_to_confirm" }));
+    assert.equal(v.wishesAnswerUnknown, false);
+  });
+  test("c5がconsideringのときwishesAnswerUnknownはfalse", () => {
+    const v = computePostVariables(answers({ c5: "considering" }));
+    assert.equal(v.wishesAnswerUnknown, false);
+  });
+
+  test("c7がunknownのときmoneyAnswerUnknownはtrue", () => {
+    const v = computePostVariables(answers({ c7: "unknown" }));
+    assert.equal(v.moneyAnswerUnknown, true);
+  });
+  test("c7がunknown_amountのときmoneyAnswerUnknownはfalse（既存moneyUnclearとは異なる基準）", () => {
+    const v = computePostVariables(answers({ c7: "unknown_amount" }));
+    assert.equal(v.moneyAnswerUnknown, false);
+    assert.equal(v.moneyUnclear, true);
+  });
+  test("c7がlikely_sufficientのときmoneyAnswerUnknownはfalse", () => {
+    const v = computePostVariables(answers({ c7: "likely_sufficient" }));
+    assert.equal(v.moneyAnswerUnknown, false);
+  });
+
+  test("c3がundecidedでも、supportAnswerUnknown/wishesAnswerUnknown/moneyAnswerUnknownはc3の値に影響されない", () => {
+    const v = computePostVariables(answers({ c3: "undecided", c4: "arranged", c5: "wants_home", c7: "likely_sufficient" }));
+    assert.equal(v.supportAnswerUnknown, false);
+    assert.equal(v.wishesAnswerUnknown, false);
+    assert.equal(v.moneyAnswerUnknown, false);
+  });
+});
