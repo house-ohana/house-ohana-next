@@ -90,6 +90,15 @@ export function computePostVariables(answers: PostValidAnswers) {
   const supportAnswerUnknown = c4 === "unknown";
   const wishesAnswerUnknown = c5 === "unknown";
   const moneyAnswerUnknown = c7 === "unknown";
+  const deadlineAnswerUnknown = c2 === "unknown";
+  const homeStatusAnswerUnknown = c6 === "unknown";
+  const careAnswerUnknown = s1 === "unknown";
+  const contractAnswerUnknown = ct1 === "unknown";
+
+  // 「まだ決めていない／まだ確認していない」は、literalなunknownとは異なる確定した回答事実として扱う
+  // （成果物層のconfirmedFacts候補用。unknownItemsには使わない）。
+  const homeIntentUndecided = h1 === "undecided";
+  const contractNotConfirmed = ct1 === "not_confirmed";
 
   return {
     isImmediateDeadline,
@@ -128,5 +137,11 @@ export function computePostVariables(answers: PostValidAnswers) {
     supportAnswerUnknown,
     wishesAnswerUnknown,
     moneyAnswerUnknown,
+    deadlineAnswerUnknown,
+    homeStatusAnswerUnknown,
+    careAnswerUnknown,
+    contractAnswerUnknown,
+    homeIntentUndecided,
+    contractNotConfirmed,
   };
 }

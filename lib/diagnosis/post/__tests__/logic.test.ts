@@ -798,3 +798,83 @@ describe("Phase3準備: 成果物専用フラグ（回答値がliteralなunknown
     assert.equal(v.moneyAnswerUnknown, false);
   });
 });
+
+describe("Phase3準備2: undecided/not_confirmedをliteralなunknownと区別するフラグ", () => {
+  // --- deadlineAnswerUnknown (C2) ---
+  test("c2がunknownのときdeadlineAnswerUnknownはtrue", () => {
+    assert.equal(computePostVariables(answers({ c2: "unknown" })).deadlineAnswerUnknown, true);
+  });
+  test("c2がwithin_7_daysのときdeadlineAnswerUnknownはfalse", () => {
+    assert.equal(computePostVariables(answers({ c2: "within_7_days" })).deadlineAnswerUnknown, false);
+  });
+  test("c2がno_deadlineのときdeadlineAnswerUnknownはfalse", () => {
+    assert.equal(computePostVariables(answers({ c2: "no_deadline" })).deadlineAnswerUnknown, false);
+  });
+  test("c1がdischargedでc2がunknownのときdeadlineAnswerUnknownはtrue", () => {
+    assert.equal(computePostVariables(answers({ c1: "discharged", c2: "unknown" })).deadlineAnswerUnknown, true);
+  });
+  test("c1がdischargedでc2がmostly_settledのときdeadlineAnswerUnknownはfalse", () => {
+    assert.equal(computePostVariables(answers({ c1: "discharged", c2: "mostly_settled" })).deadlineAnswerUnknown, false);
+  });
+
+  // --- homeStatusAnswerUnknown (C6) ---
+  test("c6がunknownのときhomeStatusAnswerUnknownはtrue", () => {
+    assert.equal(computePostVariables(answers({ c6: "unknown" })).homeStatusAnswerUnknown, true);
+  });
+  test("c6がwill_be_vacantのときhomeStatusAnswerUnknownはfalse", () => {
+    assert.equal(computePostVariables(answers({ c6: "will_be_vacant" })).homeStatusAnswerUnknown, false);
+  });
+  test("c6がno_home_issueのときhomeStatusAnswerUnknownはfalse", () => {
+    assert.equal(computePostVariables(answers({ c6: "no_home_issue" })).homeStatusAnswerUnknown, false);
+  });
+
+  // --- careAnswerUnknown (S1) ---
+  test("s1がunknownのときcareAnswerUnknownはtrue", () => {
+    const v = computePostVariables(answers({ c4: "not_arranged", s1: "unknown" }));
+    assert.equal(v.careAnswerUnknown, true);
+  });
+  test("s1がapplyingのときcareAnswerUnknownはfalse（既存careLevelUnclearとは異なる基準）", () => {
+    const v = computePostVariables(answers({ c4: "not_arranged", s1: "applying" }));
+    assert.equal(v.careAnswerUnknown, false);
+    assert.equal(v.careLevelUnclear, true);
+  });
+  test("s1がnot_appliedのときcareAnswerUnknownはfalse", () => {
+    const v = computePostVariables(answers({ c4: "not_arranged", s1: "not_applied" }));
+    assert.equal(v.careAnswerUnknown, false);
+  });
+  test("s1が未回答（支援枝未到達）のときcareAnswerUnknownはfalse", () => {
+    assert.equal(computePostVariables(answers({ c4: "arranged" })).careAnswerUnknown, false);
+  });
+
+  // --- contractAnswerUnknown / contractNotConfirmed (CT1) ---
+  test("ct1がunknownのときcontractAnswerUnknownはtrue、contractNotConfirmedはfalse", () => {
+    const v = computePostVariables(answers({ c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "unknown" }));
+    assert.equal(v.contractAnswerUnknown, true);
+    assert.equal(v.contractNotConfirmed, false);
+  });
+  test("ct1がnot_confirmedのときcontractNotConfirmedはtrue、contractAnswerUnknownはfalse（相互排他の確認）", () => {
+    const v = computePostVariables(answers({ c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "not_confirmed" }));
+    assert.equal(v.contractNotConfirmed, true);
+    assert.equal(v.contractAnswerUnknown, false);
+    assert.equal(v.contractStatusUnknown, true);
+  });
+  test("ct1がclearly_understandsのときどちらもfalse", () => {
+    const v = computePostVariables(answers({ c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "clearly_understands" }));
+    assert.equal(v.contractAnswerUnknown, false);
+    assert.equal(v.contractNotConfirmed, false);
+  });
+
+  // --- homeIntentUndecided (H1) ---
+  test("h1がundecidedのときhomeIntentUndecidedはtrue", () => {
+    assert.equal(computePostVariables(answers({ c6: "will_be_vacant", h1: "undecided" })).homeIntentUndecided, true);
+  });
+  test("h1がkeep_for_nowのときhomeIntentUndecidedはfalse", () => {
+    assert.equal(computePostVariables(answers({ c6: "will_be_vacant", h1: "keep_for_now" })).homeIntentUndecided, false);
+  });
+  test("h1がsellのときhomeIntentUndecidedはfalse", () => {
+    assert.equal(computePostVariables(answers({ c6: "will_be_vacant", h1: "sell" })).homeIntentUndecided, false);
+  });
+  test("h1が未回答（実家枝未到達）のときhomeIntentUndecidedはfalse", () => {
+    assert.equal(computePostVariables(answers({ c6: "no_home_issue" })).homeIntentUndecided, false);
+  });
+});
