@@ -300,6 +300,22 @@ export default function DiagnosisResultSections({ result, resultPath }: Props) {
         <KnowledgeCardList cards={FUTURE_KNOWLEDGE_CARDS} />
       </details>
 
+      {/* Phase3成果物: 今回整理できたこと／まだ確認できていないこと。
+          表示側はresult.artifactsの文言をそのまま描画するだけで、回答値・変数の再判定はしない。 */}
+      {result.artifacts.confirmedFacts.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-bold text-ohana-ink sm:text-2xl">今回整理できたこと</h2>
+          <TextList items={result.artifacts.confirmedFacts.map((fact) => fact.text)} />
+        </section>
+      ) : null}
+
+      {result.artifacts.unknownItems.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-bold text-ohana-ink sm:text-2xl">まだ確認できていないこと</h2>
+          <TextList items={result.artifacts.unknownItems.map((item) => item.text)} dotClassName="bg-ohana-brown" />
+        </section>
+      ) : null}
+
       {/* 5. 相談の前に準備すると良いこと（固定セクション。回答に依存しない） */}
       <section className="flex flex-col gap-3">
         <h2 className="text-xl font-bold text-ohana-ink sm:text-2xl">相談の前に準備すると良いこと</h2>

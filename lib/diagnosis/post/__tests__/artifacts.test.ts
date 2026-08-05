@@ -287,3 +287,27 @@ describe("固定変換表: artifactPriorityの直接検証（数値が小さい�
     assert.ok(C7_FACT.unknown_amount.artifactPriority < C7_FACT.likely_sufficient.artifactPriority);
   });
 });
+
+describe("buildUnknownItems: 全候補が行動指示ではなく状態文であること", () => {
+  const scenarios: Array<[string, Partial<PostValidAnswers>]> = [
+    ["c2", { c2: "unknown" }],
+    ["c4", { c4: "unknown" }],
+    ["c5", { c5: "unknown" }],
+    ["c7", { c7: "unknown" }],
+    ["s1", { c4: "not_arranged", s1: "unknown" }],
+    ["c6", { c6: "unknown" }],
+    ["h2", { c6: "will_be_vacant", h1: "sell", h2: "unknown" }],
+    ["ct1", { c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "unknown" }],
+  ];
+
+  for (const [label, overrides] of scenarios) {
+    test(`${label}由来の未確認事項が「まだ確認できていません。」で終わり、行動指示を含まない`, () => {
+      const { unknownItems } = build(overrides);
+      assert.ok(unknownItems.length > 0);
+      for (const item of unknownItems) {
+        assert.ok(item.text.endsWith("まだ確認できていません。"), `${item.id}: ${item.text}`);
+        assert.doesNotMatch(item.text, /しましょう|へ確認/);
+      }
+    });
+  }
+});

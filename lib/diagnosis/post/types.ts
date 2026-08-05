@@ -2,6 +2,8 @@
 // 仕様: docs/phase2-design.md（Phase2 質問構造再設計・承認済み）が唯一の正本。
 // 質問構造の詳細は lib/diagnosis/post/questions.ts を参照。
 
+import type { PostArtifacts } from "./artifacts/types";
+
 // ---- 共通質問（C1〜C8） ----
 
 export type C1Value = "hospitalized" | "discharged" | "facility_search" | "future";
@@ -118,4 +120,6 @@ export type PostResult = {
   selfHelp: string[];
   askProfessional: string[];
   consultation: PostConsultationSection;
+  /** Phase3成果物（今回整理できたこと／まだ確認できていないこと）。buildPostArtifactsが生成する。 */
+  artifacts: PostArtifacts;
 };

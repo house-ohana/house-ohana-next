@@ -5,6 +5,8 @@ import { decodePostParams, encodePostAnswers, POST_SCHEMA_VERSION } from "../sch
 import { KNOWLEDGE_RULE_VERSION, GUIDANCE_CONTENT_VERSION } from "../guidanceContent";
 import { buildActionCandidates } from "../actions";
 import { computePostVariables } from "../variables";
+import { buildConfirmedFacts } from "../artifacts/buildConfirmedFacts";
+import { buildUnknownItems } from "../artifacts/buildUnknownItems";
 import {
   POST_QUESTIONS,
   isPostQuestionApplicable,
@@ -876,5 +878,57 @@ describe("Phase3準備2: undecided/not_confirmedをliteralなunknownと区別す
   });
   test("h1が未回答（実家枝未到達）のときhomeIntentUndecidedはfalse", () => {
     assert.equal(computePostVariables(answers({ c6: "no_home_issue" })).homeIntentUndecided, false);
+  });
+});
+
+describe("Phase3 Step3: buildPostResult().artifacts の配線確認", () => {
+  test("buildPostResult(...).artifactsは、buildConfirmedFacts/buildUnknownItemsを直接呼んだ結果と一致する", () => {
+    const a = answers({ c6: "will_be_vacant", h1: "sell", h2: "unknown", ct1: "not_confirmed" });
+    const v = computePostVariables(a);
+    const result = buildPostResult(a);
+    assert.deepEqual(result.artifacts.confirmedFacts, buildConfirmedFacts(a, v));
+    assert.deepEqual(result.artifacts.unknownItems, buildUnknownItems(v));
+  });
+
+  test("confirmedFacts/unknownItemsが両方とも空になりうる回答でも、buildPostResultは正常に返る", () => {
+    // unknownItemsが空になる回答（BASELINEはunknown系の値を含まない）
+    const result = buildPostResult(answers({}));
+    assert.deepEqual(result.artifacts.unknownItems, []);
+    // confirmedFactsはC3が常に確定事実として残るため空にはならないが、
+    // artifacts自体が例外なく返ることを確認する
+    assert.ok(Array.isArray(result.artifacts.confirmedFacts));
+  });
+
+  test("artifacts追加後も、既存フィールド（firstAction等）の値は変わらない", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const result = buildPostResult(a);
+    assert.match(result.firstAction.headline, /病院の退院支援担当者に確認/);
+    assert.equal(result.consultation.urgent, true);
+  });
+
+  test("unknownItemsの全文が行動指示ではなく状態文（「まだ確認できていません。」で終わる）", () => {
+    const scenarios: Partial<PostValidAnswers>[] = [
+      { c2: "unknown" },
+      { c4: "unknown" },
+      { c5: "unknown" },
+      { c7: "unknown" },
+      { c4: "not_arranged", s1: "unknown" },
+      { c6: "unknown" },
+      { c6: "will_be_vacant", h1: "sell", h2: "unknown" },
+      { c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "unknown" },
+    ];
+    for (const overrides of scenarios) {
+      const v = computePostVariables(answers(overrides));
+      const items = buildUnknownItems(v);
+      assert.ok(items.length > 0, JSON.stringify(overrides));
+      for (const item of items) {
+        assert.ok(item.text.endsWith("まだ確認できていません。"), `${item.id}: ${item.text}`);
+        assert.doesNotMatch(item.text, /しましょう|へ確認/);
+      }
+    }
+  });
+
+  test("POST_SCHEMA_VERSIONは変更されていない", () => {
+    assert.equal(POST_SCHEMA_VERSION, "4.0");
   });
 });

@@ -8,6 +8,7 @@ import { buildInsights } from "./insights";
 import { buildContacts } from "./contacts";
 import { buildSelfHelp, buildAskProfessional } from "./selfHelp";
 import { computeConsultationFlags } from "./consultation";
+import { buildPostArtifacts } from "./artifacts/buildPostArtifacts";
 
 /**
  * 「3分整理ナビ｜事後ブランチ」（m=post）結果ロジックの入口。
@@ -24,6 +25,7 @@ export function buildPostResult(answers: PostValidAnswers): PostResult {
 
   const { firstAction, nextActions } = buildFirstAndNextActions(answers, v);
   const decisions = buildDecisions(answers, v);
+  const artifacts = buildPostArtifacts(answers, v);
 
   return {
     schemaVersion: POST_SCHEMA_VERSION,
@@ -38,5 +40,6 @@ export function buildPostResult(answers: PostValidAnswers): PostResult {
     selfHelp: buildSelfHelp(answers, v),
     askProfessional: buildAskProfessional(answers, v),
     consultation: computeConsultationFlags(v),
+    artifacts,
   };
 }
