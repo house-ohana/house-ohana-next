@@ -1,5 +1,5 @@
 // 「3分整理ナビ｜事後ブランチ」（m=post）の型定義。
-// 仕様: docs/phase2-design.md（Phase2 質問構造再設計・承認済み）が唯一の正本。
+// 仕様: docs/01-phase2-question-architecture.md（Phase2 質問構造再設計・承認済み）が唯一の正本。
 // 質問構造の詳細は lib/diagnosis/post/questions.ts を参照。
 
 import type { PostArtifacts } from "./artifacts/types";
@@ -35,7 +35,7 @@ export type C8Value = "shared" | "mostly_one_person" | "few_supporters" | "unkno
 // ---- 条件付き追加質問（該当者のみ） ----
 
 // 支援枝（ゲート: C4が「一部決まっている／まだ決まっていない／分からない」）
-// 「申請中」と「まだ申請していない」は別の状態のため分離する（docs/phase2-design.md 再修正版①）。
+// 「申請中」と「まだ申請していない」は別の状態のため分離する（docs/01-phase2-question-architecture.md 再修正版①）。
 export type S1Value = "certified_with_manager" | "certified_no_manager" | "applying" | "not_applied" | "unknown";
 
 // 実家枝（ゲート: C6が「対象になる実家はない」「分からない」以外）

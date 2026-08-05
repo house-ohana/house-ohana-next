@@ -16,7 +16,7 @@ import type { PostAnswers, PostValidAnswers } from "@/lib/diagnosis/post/types";
 
 type Stage = "intro" | "question" | "future";
 
-// docs/phase2-design.md: 共通8問＋条件付き最大4問（該当者のみ）。
+// docs/01-phase2-question-architecture.md: 共通8問＋条件付き最大4問（該当者のみ）。
 const MIN_QUESTIONS = 8;
 const MAX_QUESTIONS = 8 + 4;
 

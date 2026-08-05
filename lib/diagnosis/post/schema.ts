@@ -6,7 +6,7 @@ import type { PostValidAnswers, PostCommonQuestionId } from "./types";
  * 設計方針:
  * - URLには氏名・住所・病名・資産額などを含めず、質問IDに対応する短い英数字IDのみを含める。
  * - POST_SCHEMA_VERSIONは、質問ID・回答コード・URL互換性を表すスキーマバージョン。
- *   docs/phase2-design.md（Phase2 質問構造再設計）により質問構成そのものが変わるため、
+ *   docs/01-phase2-question-architecture.md（Phase2 質問構造再設計）により質問構成そのものが変わるため、
  *   "3.1" から "4.0" へ引き上げる。
  * - 共通質問（c1〜c8）は必須。条件付き質問（s1／h1・h2／ct1）は該当する場合のみURLに含める
  *   （lib/diagnosis/pre/schema.ts のT1/T4と同じ方式）。該当しないのに値がある、

@@ -2,7 +2,7 @@ import type { PostValidAnswers } from "./types";
 
 /**
  * 「3分整理ナビ｜事後ブランチ」（m=post）判定用の内部変数。
- * docs/phase2-design.md（Phase2 質問構造再設計）に合わせて参照元をc1〜c8/s1/h1/h2/ct1へ
+ * docs/01-phase2-question-architecture.md（Phase2 質問構造再設計）に合わせて参照元をc1〜c8/s1/h1/h2/ct1へ
  * 切り替えたもの。変数名・計算式はPhase1.5までと同じ意味を保つ（結果画面のロジックである
  * actions.ts/insights.ts/contacts.ts/decisions.ts/selfHelp.ts/consultation.tsは無変更）。
  * 生成AIやランダム処理は使わず、回答からの純粋関数として計算する。
@@ -31,7 +31,7 @@ export function computePostVariables(answers: PostValidAnswers) {
   // 契約に関する案内は、実際にその意向がある場合にのみ表示する（旧q7=consider_home_incomeから
   // H1（実家枝）へ入力元を切り替えた。解体も不可逆な契約行為のため対象に含める）。
   // 売却・賃貸・解体は、それぞれ異なる制度・手続が関わるため内部変数を分離する
-  // （docs/phase2-design.md 再修正版④）。既存の判定条件は homeActionExpected（3つのOR）を
+  // （docs/01-phase2-question-architecture.md 再修正版④）。既存の判定条件は homeActionExpected（3つのOR）を
   // 参照したままで変わらない。
   const sellIntent = h1 === "sell";
   const rentIntent = h1 === "rent";

@@ -23,7 +23,7 @@ import {
 } from "../resultDisplayText";
 import type { PostValidAnswers, PostAnswers } from "../types";
 
-// docs/phase2-design.md（Phase2 質問構造再設計）に対応するテスト。
+// docs/01-phase2-question-architecture.md（Phase2 質問構造再設計）に対応するテスト。
 // ベースライン: どの条件付き枝も発火しない「落ち着いている」回答セット。
 const BASELINE: PostValidAnswers = {
   c1: "discharged",

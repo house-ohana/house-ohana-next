@@ -2,7 +2,7 @@ import type { PostAnswers, PostQuestionId } from "./types";
 
 /**
  * 「3分整理ナビ｜事後ブランチ」（m=post）の設問データ。
- * docs/phase2-design.md（Phase2 質問構造再設計・承認済み）をそのまま実装したもの。
+ * docs/01-phase2-question-architecture.md（Phase2 質問構造再設計・承認済み）をそのまま実装したもの。
  * 文言・回答IDは同文書と完全に一致させること。
  *
  * 構成:
@@ -79,7 +79,7 @@ function ct1ActionLabel(answers: PostAnswers): string {
   return "売却";
 }
 
-// ---- 「分からない」が多い場合の収束判定（docs/phase2-design.md 第7節） ----
+// ---- 「分からない」が多い場合の収束判定（docs/01-phase2-question-architecture.md 第7節） ----
 // C4・C6・C7・C8がすべて「分からない」のとき、支援枝・実家枝（契約枝含む）をスキップする。
 export function isMaximallyUncertain(answers: PostAnswers): boolean {
   return answers.c4 === "unknown" && answers.c6 === "unknown" && answers.c7 === "unknown" && answers.c8 === "unknown";
