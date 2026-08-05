@@ -29,7 +29,7 @@ export function buildInsights(answers: PostValidAnswers, v: PostVariables): Post
       body: INSIGHT_TEXT.contractStatusUnknownWithHome,
       footnote: CAPACITY_ANSWER_ONLY_NOTE,
     });
-  } else if (answers.q9 === "clearly_understands" && v.homeActionExpected) {
+  } else if (answers.ct1 === "clearly_understands" && v.homeActionExpected) {
     ordered.push({ id: "contract_clear_with_home", body: INSIGHT_TEXT.contractClearWithHome });
   }
 
@@ -37,11 +37,11 @@ export function buildInsights(answers: PostValidAnswers, v: PostVariables): Post
     ordered.push({ id: "family_out_of_pocket", body: INSIGHT_TEXT.familyOutOfPocket });
   }
 
-  if ((answers.q6 === "will_be_vacant" || answers.q6 === "already_vacant") && answers.q7 === "consider_home_income") {
+  if ((answers.c6 === "will_be_vacant" || answers.c6 === "already_vacant") && v.homeFinancePlanning) {
     ordered.push({ id: "vacant_home_sale_deadline", body: INSIGHT_TEXT.vacantHomeSaleDeadline });
   }
 
-  if (answers.q6 === "will_be_vacant" || answers.q6 === "already_vacant") {
+  if (answers.c6 === "will_be_vacant" || answers.c6 === "already_vacant") {
     ordered.push({ id: "vacant_home_management", body: INSIGHT_TEXT.vacantHomeManagement });
   }
 

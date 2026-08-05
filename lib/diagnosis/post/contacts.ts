@@ -12,7 +12,7 @@ const MAX_CONTACTS = 4;
 type CareCoordinationContact = "hospital" | "regional_support" | "care_manager_if_assigned" | null;
 
 function careCoordinationContact(answers: PostValidAnswers, v: PostVariables): CareCoordinationContact {
-  if (answers.q1 === "hospitalized" && (v.isImmediateDeadline || v.isNearDeadline || v.activeSupportGap || v.supportPartlyUnclear)) {
+  if (answers.c1 === "hospitalized" && (v.isImmediateDeadline || v.isNearDeadline || v.activeSupportGap || v.supportPartlyUnclear)) {
     return "hospital";
   }
   if (v.needsRegionalSupport) {
@@ -52,7 +52,7 @@ export function buildContacts(answers: PostValidAnswers, v: PostVariables): Post
   const realEstateNeeded = !v.noHome && (v.homeActionExpected || v.homeWillRemain);
   if (realEstateNeeded) cards.push(toCard(CONTACT_CARDS.realEstate));
 
-  const taxByHome = !v.noHome && (v.homeFinancePlanning || answers.q6 === "will_be_vacant" || answers.q6 === "already_vacant");
+  const taxByHome = !v.noHome && (v.homeFinancePlanning || answers.c6 === "will_be_vacant" || answers.c6 === "already_vacant");
   const taxByFamilyOnly = !v.noHome && !taxByHome && v.familyContribution;
   if (taxByHome) cards.push(toCard(CONTACT_CARDS.taxHome));
   else if (taxByFamilyOnly) cards.push(toCard(CONTACT_CARDS.taxFamilyOnly));

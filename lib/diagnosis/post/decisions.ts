@@ -20,7 +20,7 @@ export function buildDecisions(answers: PostValidAnswers, v: PostVariables): Pos
   if (v.residenceUnclear && (v.isImmediateDeadline || v.isNearDeadline || v.hospitalizedSupportGap)) {
     decideNow.push("退院直後に過ごす場所の仮置き");
   }
-  if ((v.supportUnclear || v.supportPartlyUnclear) && answers.q4 !== "not_needed_said") {
+  if ((v.supportUnclear || v.supportPartlyUnclear) && answers.c4 !== "not_needed_said") {
     decideNow.push("退院直後に必要な支援");
   }
   if (v.moneyNeedsEarlyCheck || v.moneyUnclear || v.familyContribution) {
@@ -39,17 +39,17 @@ export function buildDecisions(answers: PostValidAnswers, v: PostVariables): Pos
   const decideLater: string[] = [];
   let laterCaveat = false;
 
-  if (answers.q3 === "temporary_home" || answers.q3 === "undecided") {
+  if (answers.c3 === "temporary_home" || answers.c3 === "undecided") {
     decideLater.push("長期的にどこで暮らすか");
   }
-  if (answers.q3 === "facility") {
+  if (answers.c3 === "facility") {
     decideLater.push("施設等を長期の住まいとするか");
   }
   if (v.homeWillRemain || v.homeActionExpected) {
     decideLater.push("実家を最終的に残す・貸す・売るか");
     laterCaveat = true;
   }
-  if (answers.q6 === "will_be_vacant" || answers.q6 === "already_vacant") {
+  if (answers.c6 === "will_be_vacant" || answers.c6 === "already_vacant") {
     decideLater.push("家財をいつ、どこまで整理するか");
     laterCaveat = true;
   }

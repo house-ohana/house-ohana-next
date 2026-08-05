@@ -3,13 +3,42 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { POST_QUESTIONS, getPostQuestionOptions, getPostQuestionTitle } from "@/lib/diagnosis/post/questions";
+import {
+  POST_QUESTIONS,
+  getPostQuestionOptions,
+  getPostQuestionTitle,
+  getPostQuestionLead,
+  isPostQuestionApplicable,
+  pruneInapplicableAnswers,
+} from "@/lib/diagnosis/post/questions";
 import { buildPostResultPath } from "@/lib/diagnosis/post/schema";
 import type { PostAnswers, PostValidAnswers } from "@/lib/diagnosis/post/types";
 
 type Stage = "intro" | "question" | "future";
 
-const TOTAL_QUESTIONS = POST_QUESTIONS.length;
+// docs/phase2-design.md: 共通8問＋条件付き最大4問（該当者のみ）。
+const MIN_QUESTIONS = 8;
+const MAX_QUESTIONS = 8 + 4;
+
+function applicableQuestions(answers: PostAnswers) {
+  return POST_QUESTIONS.filter((question) => isPostQuestionApplicable(question, answers));
+}
+
+function nextApplicableIndex(fromIndex: number, answers: PostAnswers): number {
+  let index = fromIndex + 1;
+  while (index < POST_QUESTIONS.length && !isPostQuestionApplicable(POST_QUESTIONS[index], answers)) {
+    index += 1;
+  }
+  return index;
+}
+
+function prevApplicableIndex(fromIndex: number, answers: PostAnswers): number {
+  let index = fromIndex - 1;
+  while (index >= 0 && !isPostQuestionApplicable(POST_QUESTIONS[index], answers)) {
+    index -= 1;
+  }
+  return index;
+}
 
 export default function DiagnosisWizard() {
   const router = useRouter();
@@ -30,25 +59,24 @@ export default function DiagnosisWizard() {
   const setAnswer = (value: string) => {
     if (!question) return;
     setAnswers((prev) => {
-      const next: PostAnswers = { ...prev, [question.id]: value };
-      // Q1を変更したら、以前のQ2回答（型が異なる可能性がある）は破棄する
-      if (question.id === "q1") delete next.q2;
-      // Q6を変更したら、consider_home_incomeが成立しなくなる可能性があるQ7回答を破棄する
-      if (question.id === "q6" && value === "no_home_issue" && next.q7 === "consider_home_income") delete next.q7;
-      return next;
+      const withNewAnswer: PostAnswers = { ...prev, [question.id]: value };
+      // 変更した回答によって非該当になった、他の設問の回答をまとめて破棄する
+      // （C1変更→C2、C4変更→S1、C6変更→H1/H2/CT1、H1変更→H2/CT1、など）
+      return pruneInapplicableAnswers(withNewAnswer);
     });
   };
 
   const goNext = () => {
     if (!question || !selected) return;
 
-    if (question.id === "q1" && selected === "future") {
+    if (question.id === "c1" && selected === "future") {
       setStage("future");
       return;
     }
 
-    if (stepIndex + 1 < TOTAL_QUESTIONS) {
-      setStepIndex((prev) => prev + 1);
+    const next = nextApplicableIndex(stepIndex, answers);
+    if (next < POST_QUESTIONS.length) {
+      setStepIndex(next);
       return;
     }
 
@@ -57,18 +85,19 @@ export default function DiagnosisWizard() {
   };
 
   const goBack = () => {
-    if (stepIndex === 0) {
-      setStage("intro");
+    const prev = prevApplicableIndex(stepIndex, answers);
+    if (prev >= 0) {
+      setStepIndex(prev);
       return;
     }
-    setStepIndex((prev) => prev - 1);
+    setStage("intro");
   };
 
-  const restartFromQ1 = () => {
+  const restartFromC1 = () => {
     setAnswers((prev) => {
       const next = { ...prev };
-      delete next.q1;
-      delete next.q2;
+      delete next.c1;
+      delete next.c2;
       return next;
     });
     setStepIndex(0);
@@ -79,7 +108,7 @@ export default function DiagnosisWizard() {
     return (
       <div ref={headingRef} className="flex scroll-mt-20 flex-col gap-6">
         <p className="text-base leading-loose text-ohana-gray sm:text-lg">
-          {TOTAL_QUESTIONS}問の質問に答えると、今の状況と、まず最初にすることを整理します。医療・介護・法律・税務・不動産の診断や判定ではありません。
+          {MIN_QUESTIONS}〜{MAX_QUESTIONS}問程度の質問に答えると、今の状況と、まず最初にすることを整理します。質問数は回答によって変わり、該当する方にだけ追加の質問が表示されます。医療・介護・法律・税務・不動産の診断や判定ではありません。
         </p>
         <ul className="flex flex-col gap-2 text-sm text-ohana-gray sm:text-base">
           <li>・氏名や住所、病名、資産額などはお伺いしません。</li>
@@ -112,7 +141,7 @@ export default function DiagnosisWizard() {
           </Link>
           <button
             type="button"
-            onClick={restartFromQ1}
+            onClick={restartFromC1}
             className="inline-flex min-h-12 items-center justify-center rounded-full border-2 border-ohana-gray px-6 py-3 text-base font-semibold text-ohana-ink hover:bg-ohana-beige"
           >
             入院・退院など今の対応を整理し直す
@@ -124,15 +153,20 @@ export default function DiagnosisWizard() {
 
   if (!question) return null;
 
-  const progressPercent = Math.round(((stepIndex + 1) / TOTAL_QUESTIONS) * 100);
+  const applicable = applicableQuestions(answers);
+  const totalQuestions = applicable.length;
+  const currentPosition = applicable.findIndex((item) => item.id === question.id) + 1;
+  const progressPercent = totalQuestions > 0 ? Math.round((currentPosition / totalQuestions) * 100) : 0;
   const canProceed = Boolean(selected);
   const title = getPostQuestionTitle(question, answers);
+  const lead = getPostQuestionLead(question, answers);
+  const isLastQuestion = nextApplicableIndex(stepIndex, answers) >= POST_QUESTIONS.length;
 
   return (
     <div ref={headingRef} className="flex scroll-mt-20 flex-col gap-6">
       <div>
         <p className="mb-2 text-sm font-semibold text-ohana-brown" aria-live="polite">
-          質問 {stepIndex + 1} / {TOTAL_QUESTIONS}
+          質問 {currentPosition} / {totalQuestions}（目安）
         </p>
         <div
           role="progressbar"
@@ -146,7 +180,7 @@ export default function DiagnosisWizard() {
         </div>
       </div>
 
-      {question.lead ? <p className="text-sm leading-loose text-ohana-gray sm:text-base">{question.lead}</p> : null}
+      {lead ? <p className="text-sm leading-loose text-ohana-gray sm:text-base">{lead}</p> : null}
 
       <fieldset className="flex flex-col gap-4">
         <legend className="text-xl font-bold leading-snug text-ohana-ink sm:text-2xl">{title}</legend>
@@ -194,7 +228,7 @@ export default function DiagnosisWizard() {
           disabled={!canProceed || isNavigating}
           className="inline-flex min-h-12 items-center justify-center rounded-full bg-ohana-green px-6 py-3 text-base font-semibold text-ohana-white hover:bg-ohana-green-dark disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {isNavigating ? "結果を作成しています…" : stepIndex + 1 === TOTAL_QUESTIONS ? "結果を見る" : "次の質問へ"}
+          {isNavigating ? "結果を作成しています…" : isLastQuestion ? "結果を見る" : "次の質問へ"}
         </button>
       </div>
     </div>

@@ -9,7 +9,7 @@ const MAX_ITEMS = 3;
 export function buildSelfHelp(answers: PostValidAnswers, v: PostVariables): string[] {
   const items: string[] = [];
 
-  const hospitalDischargeCheck = answers.q1 === "hospitalized" && (v.isImmediateDeadline || v.isNearDeadline || v.activeSupportGap);
+  const hospitalDischargeCheck = answers.c1 === "hospitalized" && (v.isImmediateDeadline || v.isNearDeadline || v.activeSupportGap);
   if (hospitalDischargeCheck) {
     items.push("病院へ退院予定日・未決定事項を確認する");
   }
@@ -18,7 +18,7 @@ export function buildSelfHelp(answers: PostValidAnswers, v: PostVariables): stri
     items.push("決まっていることと未決定のことを分ける");
   }
 
-  if (v.wishesUnclear || v.wishesHardToConfirm || answers.q5 === "considering") {
+  if (v.wishesUnclear || v.wishesHardToConfirm || answers.c5 === "considering") {
     items.push("本人の希望を確認する。すでに確認済みなら文章に残す");
   }
 
@@ -70,7 +70,7 @@ export function buildAskProfessional(answers: PostValidAnswers, v: PostVariables
     items.push("売却・賃貸・管理の価格と実務");
   }
 
-  if (v.homeFinancePlanning || answers.q6 === "will_be_vacant" || answers.q6 === "already_vacant") {
+  if (v.homeFinancePlanning || answers.c6 === "will_be_vacant" || answers.c6 === "already_vacant") {
     items.push("税制上の期限と条件");
   }
 
