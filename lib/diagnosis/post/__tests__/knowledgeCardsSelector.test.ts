@@ -46,13 +46,31 @@ const ALL_MATCHED_TRUE: readonly KnowledgeCardMatch[] = [
 ];
 
 describe("selectKnowledgeCards: 本番registryとenabled", () => {
-  test("1. 本番registryは全件disabledなので、matched=trueがあっても常に空配列", () => {
+  // 2026-08-06にCard A（discharge_support_start_gap）がenabled=trueへ変更された
+  // （docs/reviews/phase4.1-card-a-enablement-result.md）。Card B・Cはenabled=falseのまま。
+  test("1. 本番registryはCard Aだけenabledなので、3カードともmatched=trueならCard Aだけ返る", () => {
     const result = selectKnowledgeCards(ALL_MATCHED_TRUE, KNOWLEDGE_CARD_REGISTRY);
-    assert.deepEqual(result, []);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap"],
+    );
   });
 
-  test("引数省略時も本番registryを使う（同じく空配列）", () => {
+  test("引数省略時も本番registryを使う（同じくCard Aだけ返る）", () => {
     const result = selectKnowledgeCards(ALL_MATCHED_TRUE);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap"],
+    );
+  });
+
+  test("Card Aがmatched=falseなら、本番registryでも空配列（Card B・Cはmatched=trueでも出ない）", () => {
+    const matches = [
+      matchedFalse("discharge_support_start_gap"),
+      matchedTrue("transition_monthly_cash_gap", 30),
+      matchedTrue("home_ownership_intent_gap", 20),
+    ];
+    const result = selectKnowledgeCards(matches, KNOWLEDGE_CARD_REGISTRY);
     assert.deepEqual(result, []);
   });
 

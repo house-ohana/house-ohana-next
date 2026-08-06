@@ -35,7 +35,7 @@ function answers(overrides: Partial<PostValidAnswers>): PostValidAnswers {
   return { ...BASELINE, ...overrides };
 }
 
-describe("buildPostResult().knowledgeCards: 本番registryでは常に空配列", () => {
+describe("buildPostResult().knowledgeCards: 本番registry（Card Aだけenabled、2026-08-06〜）", () => {
   test("1. m=post結果にknowledgeCardsプロパティが存在する", () => {
     const result = buildPostResult(answers({}));
     assert.ok("knowledgeCards" in result);
@@ -51,9 +51,10 @@ describe("buildPostResult().knowledgeCards: 本番registryでは常に空配列"
     assert.deepEqual(result.knowledgeCards, []);
   });
 
-  test("4. 入院中・支援未調整の回答でも空配列", () => {
+  test("4. 入院中・支援未調整の回答では、Card Aが1件返る（2026-08-06有効化後の正式状態）", () => {
     const result = buildPostResult(answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" }));
-    assert.deepEqual(result.knowledgeCards, []);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards[0]?.id, "discharge_support_start_gap");
   });
 
   test("5. familyContribution=trueの回答でも空配列", () => {
@@ -66,7 +67,7 @@ describe("buildPostResult().knowledgeCards: 本番registryでは常に空配列"
     assert.deepEqual(result.knowledgeCards, []);
   });
 
-  test("7. 複数matcherが発火する回答でも空配列", () => {
+  test("7. 複数matcherが発火する回答でも、本番registryではCard Aだけ返る（Card B・Cはenabled=falseのまま）", () => {
     const result = buildPostResult(
       answers({
         c1: "hospitalized",
@@ -80,7 +81,11 @@ describe("buildPostResult().knowledgeCards: 本番registryでは常に空配列"
         ct1: "fluctuates",
       }),
     );
-    assert.deepEqual(result.knowledgeCards, []);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap"],
+    );
   });
 
   test("8. 同じAnswersから常に同じknowledgeCardsを返す", () => {
@@ -263,7 +268,7 @@ function testRegistry(enabled: Partial<Record<KnowledgeCardId, boolean>>): reado
 }
 
 describe("Step6A: knowledgeCards.linkedContactIdsとcontactsの積集合が成立すること", () => {
-  test("本番buildPostResult(): knowledgeCardsの全linkedContactIdsがcontacts内に存在する（一般不変条件）", () => {
+  test("本番buildPostResult(): knowledgeCardsの全linkedContactIdsがcontacts内に存在する（一般不変条件、Card Aの実データで成立）", () => {
     const a = answers({
       c1: "hospitalized",
       c2: "within_7_days",
@@ -282,9 +287,10 @@ describe("Step6A: knowledgeCards.linkedContactIdsとcontactsの積集合が成�
         assert.ok(contactIds.has(linkedId), `${card.id}: ${linkedId} がcontactsに存在しない`);
       }
     }
-    // 本番registryは全件disabledのため、この不変条件テスト自体はknowledgeCards=[]の下で自明に
-    // 成立する。実データでの成立は下のenabledなregistryを使ったテストで直接確認する。
-    assert.deepEqual(result.knowledgeCards, []);
+    // 本番registryはCard Aだけenabledのため（2026-08-06〜）、この不変条件は
+    // knowledgeCards=[Card A]という実データのもとで成立することを確認する。
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards[0]?.id, "discharge_support_start_gap");
   });
 
   test("enabledなregistry・実際のbuildContacts結果で積集合が成立する（Card Aがhospitalと一致）", () => {
@@ -372,10 +378,11 @@ describe("Step6B: Card Aだけenabledな場合のPostResult相当の結果", () 
     assert.deepEqual(cards, []);
   });
 
-  test("本番回帰: 本番registry（省略時）ではCard Aの発火条件を満たす回答でもknowledgeCards=[]", () => {
+  test("本番: 本番registry（省略時）ではCard Aの発火条件を満たす回答で1件返る（2026-08-06有効化後）", () => {
     const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
     const result = buildPostResult(a);
-    assert.deepEqual(result.knowledgeCards, []);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards[0]?.id, "discharge_support_start_gap");
   });
 
   test("本番回帰: firstAction・nextActions・contactsはCard A有効化テストの影響を受けない", () => {
@@ -385,5 +392,58 @@ describe("Step6B: Card Aだけenabledな場合のPostResult相当の結果", () 
     assert.deepEqual(result.firstAction, buildFirstAndNextActions(a, v).firstAction);
     assert.deepEqual(result.nextActions, buildFirstAndNextActions(a, v).nextActions);
     assert.deepEqual(result.contacts, buildContacts(a, v));
+  });
+});
+
+// ---- Step6C: Card A本番有効化（docs/reviews/phase4.1-card-a-enablement-result.md） ----
+
+describe("Card A本番有効化後: 表示ケース・非表示ケース", () => {
+  test("表示ケース: 入院中・Card Aのギャップ成立 → knowledgeCardsはCard Aだけの1件", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const v = computePostVariables(a);
+    const result = buildPostResult(a);
+
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap"],
+    );
+
+    // linkedContactIdsはresult.contactsの部分集合である
+    const contactIds = new Set(result.contacts.map((c) => c.id));
+    for (const linkedId of result.knowledgeCards[0]?.linkedContactIds ?? []) {
+      assert.ok(contactIds.has(linkedId));
+    }
+
+    // firstAction・nextActionsは既存ロジックのままである
+    assert.deepEqual(result.firstAction, buildFirstAndNextActions(a, v).firstAction);
+    assert.deepEqual(result.nextActions, buildFirstAndNextActions(a, v).nextActions);
+
+    // contactsはKnowledge Cardのために増えていない（buildContacts(a, v)の結果と完全一致）
+    assert.deepEqual(result.contacts, buildContacts(a, v));
+  });
+
+  test("非表示ケース: Card A条件不成立（入院中でない）→ knowledgeCards=[]", () => {
+    const a = answers({ c1: "discharged", c3: "return_home", c4: "arranged" });
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+  });
+
+  test("非表示ケース: 入院中だが3ギャップ変数がすべてfalse → knowledgeCards=[]", () => {
+    const a = answers({ c1: "hospitalized", c2: "date_unknown", c3: "return_home", c4: "arranged" });
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+  });
+
+  test("非表示ケース: Card Bのみ成立（Card A不成立）→ knowledgeCards=[]", () => {
+    const a = answers({ c1: "discharged", c7: "family_pays" });
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+  });
+
+  test("非表示ケース: Card Cのみ成立（Card A不成立）→ knowledgeCards=[]", () => {
+    const a = answers({ c1: "discharged", c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "fluctuates" });
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
   });
 });

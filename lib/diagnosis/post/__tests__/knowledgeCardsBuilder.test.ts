@@ -70,10 +70,11 @@ describe("buildKnowledgeCards: 本番registry", () => {
     assert.deepEqual(result, []);
   });
 
-  test("2. matcherが発火する回答でも、本番registryでは空配列", () => {
+  test("2. Card Aのmatcherが発火する回答では、本番registryでCard Aが1件返る（2026-08-06有効化後）", () => {
     const a = answers({ c1: "hospitalized", c4: "not_arranged" });
     const result = buildKnowledgeCards(a, computePostVariables(a));
-    assert.deepEqual(result, []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "discharge_support_start_gap");
   });
 
   test("3. matcherが発火しない回答でも空配列", () => {
@@ -420,10 +421,12 @@ describe("buildKnowledgeCardsForPostResult: PostResult用ラッパー", () => {
     assert.deepEqual(buildKnowledgeCardsForPostResult(a, v, contacts, registry), buildKnowledgeCardsForPostResult(a, v, contacts, registry));
   });
 
-  test("registry省略時は本番KNOWLEDGE_CARD_REGISTRYを使用し、常に空配列", () => {
+  test("registry省略時は本番KNOWLEDGE_CARD_REGISTRYを使用する（Card Aだけenabledなので1件返る）", () => {
     const a = ALL_THREE_FIRE_URGENT;
     const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [contactFixture("hospital")]);
-    assert.deepEqual(result, []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "discharge_support_start_gap");
+    assert.deepEqual(result[0]?.linkedContactIds, ["hospital"]);
   });
 
   test("入力contactsを変更しない", () => {
@@ -520,9 +523,87 @@ describe("Card A有効化前レビュー: 単独enabled時の内容一致", () =
     assert.ok(result.length <= 1);
   });
 
-  test("本番registry（省略時）では、Card A条件成立時でも引き続き空配列", () => {
+  test("本番registry（省略時）では、Card A条件成立時に1件返る（2026-08-06有効化後の正式状態）", () => {
     const a = answers({ c1: "hospitalized", c4: "not_arranged" });
     const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "discharge_support_start_gap");
+  });
+});
+
+// ---- Step6C: Card A本番有効化（docs/reviews/phase4.1-card-a-enablement-result.md） ----
+// ここから先は、registryを一切注入しない（省略＝本番KNOWLEDGE_CARD_REGISTRYを使う）
+// 呼び出しだけを対象とし、本番の実際の挙動を直接確認する。
+
+describe("Card A本番有効化後: 本番registry（省略）での確認", () => {
+  test("Card A成立時: 1件返り、id・rank・reasonId・urgency・sources件数が正しい", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.equal(result.length, 1);
+    const card = result[0];
+    assert.ok(card);
+    assert.equal(card.id, "discharge_support_start_gap");
+    assert.equal(card.rank, 10);
+    // PostKnowledgeCardはreasonIdを持たず、whyNow（reasonIdから変換済みの固定文）だけを持つ。
+    assert.equal(card.whyNow, getWhyNow("discharge_support_and_residence_gap"));
+    assert.equal(card.urgency, "high");
+    assert.equal(card.sources.length, 2);
+  });
+
+  test("Card Aだけenabledでも戻り値は最大1件（selectorのmax2件制限を再実装していない）", () => {
+    const a = ALL_THREE_FIRE_URGENT;
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.ok(result.length <= 1);
+  });
+
+  test("入院中ではない場合は空配列", () => {
+    const a = answers({ c1: "discharged", c3: "undecided", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
     assert.deepEqual(result, []);
+  });
+
+  test("入院中でも3ギャップ変数がすべてfalseなら空配列", () => {
+    const a = answers({ c1: "hospitalized", c3: "return_home", c4: "arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.deepEqual(result, []);
+  });
+
+  test("Card Bの条件だけ成立しても空配列（Card Bはenabled=falseのまま）", () => {
+    const a = answers({ c1: "discharged", c7: "family_pays" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.deepEqual(result, []);
+  });
+
+  test("Card Cの条件だけ成立しても空配列（Card Cはenabled=falseのまま）", () => {
+    const a = answers({ c1: "discharged", c6: "will_be_vacant", h1: "sell", ct1: "fluctuates" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.deepEqual(result, []);
+  });
+
+  test("Card B・C両方の条件が成立しても、Card Aが不成立なら空配列", () => {
+    const a = answers({
+      c1: "discharged",
+      c6: "will_be_vacant",
+      c7: "family_pays",
+      h1: "sell",
+      ct1: "fluctuates",
+    });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.deepEqual(result, []);
+  });
+
+  test("最終contactsとの積集合: hospitalとcare_managerだけがcontactsにある場合、その2件だけ元の順序で残る", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const contacts: PostContactCard[] = [contactFixture("care_manager"), contactFixture("hospital")];
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), contacts);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0]?.linkedContactIds, ["hospital", "care_manager"]);
+  });
+
+  test("最終contactsに無関係なIDしか無くても、Card Aは残りlinkedContactIdsは空配列", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [contactFixture("legal")]);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0]?.linkedContactIds, []);
   });
 });

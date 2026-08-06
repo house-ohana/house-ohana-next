@@ -8,6 +8,7 @@ import KnowledgeCardsSection, { matchedContacts } from "../../../../components/K
 import { DISCHARGE_SUPPORT_START_GAP, TRANSITION_MONTHLY_CASH_GAP, HOME_OWNERSHIP_INTENT_GAP } from "../knowledgeCards/content";
 import type { PostKnowledgeCard } from "../knowledgeCards/types";
 import type { PostContactCard } from "../types";
+import { buildPostResult } from "../logic";
 
 // このテストファイルは Phase4.1 Step4 のUI（KnowledgeCardsSection）だけを対象とする。
 // components/KnowledgeCardsSection.tsはJSXを使わずReact.createElementで書かれているため、
@@ -472,4 +473,56 @@ describe("Card A有効化前レビュー: レスポンシブ構造（source確�
 
   // 実機・実ブラウザ幅での最終確認は、Card Aをenabled=trueにする次ステップで実施する
   // （このテストはソースコード上の構造確認にとどまる）。
+});
+
+// ---- Step6C: Card A本番有効化（docs/reviews/phase4.1-card-a-enablement-result.md） ----
+// buildPostResult()の実際の出力（本番registry・本番buildContacts経由）をそのまま
+// KnowledgeCardsSectionへ渡し、実際のパイプラインでの描画を確認する。
+
+describe("Card A本番有効化後: buildPostResult()の実データでの描画", () => {
+  test("Card A成立ケース: 「今、見落とさないために」が1回、title・cliff・checkItems・whyNow・出典2件が表示される", () => {
+    const a = { c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged", c5: "not_discussed", c6: "no_home_issue", c7: "likely_sufficient", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 1, "この回答ではCard Aが1件返るはず");
+
+    const html = render(result.knowledgeCards, result.contacts);
+    const headingMatches = html.match(/今、見落とさないために/g) ?? [];
+    assert.equal(headingMatches.length, 1);
+    assert.match(html, /退院後の支援は、退院日と同じ日に始まるとは限りません/);
+    assert.match(html, /退院当日の移動手段/);
+    assert.match(html, /今、確認したい理由：/);
+    assert.match(html, /参考情報/);
+    assert.match(html, /疾病・事業及び在宅医療に係る医療体制について/);
+    assert.match(html, /令和7年度地域の在宅医療の体制整備に向けた調査・連携支援事業/);
+  });
+
+  test("Card A成立ケース: Card B・Cのtitleは表示されない", () => {
+    const a = { c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged", c5: "not_discussed", c6: "no_home_issue", c7: "likely_sufficient", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    const html = render(result.knowledgeCards, result.contacts);
+    assert.doesNotMatch(html, new RegExp(CARD_B.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("Card A成立ケース: 一致する相談先だけ表示される（result.contactsとの積集合）", () => {
+    const a = { c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged", c5: "not_discussed", c6: "no_home_issue", c7: "likely_sufficient", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    const html = render(result.knowledgeCards, result.contacts);
+    const linkedIds = result.knowledgeCards[0]?.linkedContactIds ?? [];
+    for (const contact of result.contacts) {
+      if (linkedIds.includes(contact.id as (typeof linkedIds)[number])) {
+        assert.match(html, new RegExp(contact.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      }
+    }
+  });
+
+  test("Card A不成立ケース: セクション全体が描画されない（空見出し・出典も無い）", () => {
+    const a = { c1: "discharged", c2: "mostly_settled", c3: "return_home", c4: "arranged", c5: "wants_home", c6: "no_home_issue", c7: "likely_sufficient", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+    const html = render(result.knowledgeCards, result.contacts);
+    assert.equal(html, "");
+    assert.doesNotMatch(html, /今、見落とさないために/);
+    assert.doesNotMatch(html, /参考情報/);
+  });
 });

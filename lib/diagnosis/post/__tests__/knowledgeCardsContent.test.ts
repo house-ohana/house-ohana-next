@@ -121,10 +121,18 @@ describe("knowledgeCards registry: enabledの分離", () => {
     }
   });
 
-  test("3カードすべてenabled=false", () => {
-    for (const entry of KNOWLEDGE_CARD_REGISTRY) {
-      assert.equal(entry.enabled, false);
-    }
+  test("Card AだけenabledTrue、Card B・Cはenabled=false（2026-08-06 Card A有効化後の正式状態）", () => {
+    const byId = new Map(KNOWLEDGE_CARD_REGISTRY.map((entry) => [entry.content.id, entry.enabled] as const));
+    assert.equal(byId.get("discharge_support_start_gap"), true);
+    assert.equal(byId.get("transition_monthly_cash_gap"), false);
+    assert.equal(byId.get("home_ownership_intent_gap"), false);
+  });
+
+  test("registryの順番はA・B・Cのまま", () => {
+    assert.deepEqual(
+      KNOWLEDGE_CARD_REGISTRY.map((entry) => entry.content.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap", "home_ownership_intent_gap"],
+    );
   });
 
   test("registryのcontentがcontent.tsの定数と同一参照である（複製されていない）", () => {
@@ -326,11 +334,19 @@ describe("knowledgeCards: readinessとregistryの分離", () => {
     }
   });
 
-  test("ready=trueになっても、registry側のenabledは3カードともfalseのまま", () => {
-    // content.tsの出典登録とregistry.tsのenabledは独立している（docs/03 第4章）。
-    for (const entry of KNOWLEDGE_CARD_REGISTRY) {
-      assert.equal(entry.enabled, false, entry.content.id);
-    }
+  test("readyとenabledは独立した状態であり、3カードともready=trueだがenabledはCard Aだけtrue", () => {
+    // content.tsの出典登録（ready）とregistry.tsのenabledは独立している（docs/03 第4章）。
+    // 2026-08-06時点の正式状態: 3カードともready=true。Card Aだけenabled=true、Card B・Cはfalse。
+    const state = KNOWLEDGE_CARD_REGISTRY.map((entry) => ({
+      id: entry.content.id,
+      ready: isContentReadyToEnable(entry.content),
+      enabled: entry.enabled,
+    }));
+    assert.deepEqual(state, [
+      { id: "discharge_support_start_gap", ready: true, enabled: true },
+      { id: "transition_monthly_cash_gap", ready: true, enabled: false },
+      { id: "home_ownership_intent_gap", ready: true, enabled: false },
+    ]);
   });
 
   test("isContentReadyToEnable: sources・verifiedAt・reviewByが揃っていればtrue", () => {
