@@ -2,11 +2,19 @@
 // 仕様: docs/03-phase4-knowledge-cards.md v1.2（第4章）／
 // docs/instructions/phase4.1-minimum-knowledge-cards.md（第4章）。
 //
-// Step1（本ファイル・content.ts・contentVerification.ts・registry.ts・reasons.ts）では
-// 型定義・固定content・reasons・registryのみを実装する。matcher・selector・PostResultへの
-// 接続・UIへの接続はまだ実装しない（KnowledgeCardMatch／PostKnowledgeCardは型のみ）。
+// Step1（content.ts・contentVerification.ts・registry.ts・reasons.ts）では型定義・固定
+// content・reasons・registryを実装した。Step2（matchers.ts・selector.ts）でKnowledgeCardMatch
+// を実際に生成し、selectorがPostKnowledgeCardを組み立てる。PostResultへの接続・UIへの接続は
+// まだ実装しない。
 
 export type KnowledgeCardId = "discharge_support_start_gap" | "transition_monthly_cash_gap" | "home_ownership_intent_gap";
+
+/** 3カードの固定順。集約（matchKnowledgeCards）の返却順、selectorの同順位tie-breakで使用する。 */
+export const KNOWLEDGE_CARD_ORDER: readonly KnowledgeCardId[] = [
+  "discharge_support_start_gap",
+  "transition_monthly_cash_gap",
+  "home_ownership_intent_gap",
+];
 
 export type KnowledgeReasonId =
   // Card A（discharge_support_start_gap）
@@ -70,16 +78,31 @@ export type KnowledgeCardRegistryEntry = {
   readonly enabled: boolean;
 };
 
-/** matcher結果の型のみ。Step1ではmatcherを実装しない。 */
-export type KnowledgeCardMatch = {
-  readonly matched: boolean;
-  readonly cardId: KnowledgeCardId;
-  readonly reasonId: KnowledgeReasonId;
-  readonly rank: number;
-  readonly urgency: KnowledgeUrgency;
-};
+/**
+ * matcher結果の型。判別可能Union（discriminated union）とし、matched=falseに
+ * reasonId／rank／urgencyの架空値を持たせない（cardIdのみ）。matched=trueのときだけ
+ * reasonId／rank／urgencyを持つ。
+ */
+export type KnowledgeCardMatch =
+  | {
+      readonly matched: false;
+      readonly cardId: KnowledgeCardId;
+    }
+  | {
+      readonly matched: true;
+      readonly cardId: KnowledgeCardId;
+      readonly reasonId: KnowledgeReasonId;
+      readonly rank: number;
+      readonly urgency: KnowledgeUrgency;
+    };
 
-/** 画面表示用の型のみ。Step1ではPostResultへの接続・UIへの接続を行わない。 */
+/**
+ * 画面表示用の型。PostResultへの接続・UIへの接続はStep2でもまだ行わない。
+ * verifiedAt／reviewByは、元となるKnowledgeCardContentと同じく`string | null`とする
+ * （selectorはcontent readinessを再判定しないため、content側がnullのまま渡ってくる
+ * 可能性を型として正直に表す。enabled=trueにする運用上の前提はStep5のisContentReadyToEnable
+ * が別途担保する）。
+ */
 export type PostKnowledgeCard = {
   readonly id: KnowledgeCardId;
   readonly title: string;
@@ -88,8 +111,8 @@ export type PostKnowledgeCard = {
   readonly checkItems: readonly string[];
   readonly linkedContactIds: readonly ExistingContactId[];
   readonly sources: readonly KnowledgeSource[];
-  readonly verifiedAt: string;
-  readonly reviewBy: string;
+  readonly verifiedAt: string | null;
+  readonly reviewBy: string | null;
   readonly rank: number;
   readonly urgency: KnowledgeUrgency;
 };
