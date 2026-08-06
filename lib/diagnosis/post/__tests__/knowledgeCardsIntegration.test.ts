@@ -11,6 +11,9 @@ import { buildSelfHelp, buildAskProfessional } from "../selfHelp";
 import { computeConsultationFlags } from "../consultation";
 import { buildConfirmedFacts } from "../artifacts/buildConfirmedFacts";
 import { buildUnknownItems } from "../artifacts/buildUnknownItems";
+import { buildKnowledgeCardsForPostResult } from "../knowledgeCards/buildKnowledgeCards";
+import { DISCHARGE_SUPPORT_START_GAP, TRANSITION_MONTHLY_CASH_GAP, HOME_OWNERSHIP_INTENT_GAP } from "../knowledgeCards/content";
+import type { KnowledgeCardId, KnowledgeCardRegistryEntry } from "../knowledgeCards/types";
 import type { PostValidAnswers } from "../types";
 
 // このテストファイルは Phase4.1 Step3 の「PostResult.knowledgeCards接続」と「既存結果層の
@@ -246,5 +249,78 @@ describe("URL・schema回帰: knowledgeCards追加がURL互換性へ影響しな
     for (const key of keys) {
       assert.ok(["m", "v", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "s1", "h1", "h2", "ct1"].includes(key), `想定外のパラメータ: ${key}`);
     }
+  });
+});
+
+// 本番contentを参照しつつ、enabledだけをテスト用の値で持つ新しいregistryを作る（knowledgeCardsBuilder
+// テストと同じ方式）。本番KNOWLEDGE_CARD_REGISTRYはmutateしない。
+function testRegistry(enabled: Partial<Record<KnowledgeCardId, boolean>>): readonly KnowledgeCardRegistryEntry[] {
+  return [
+    { content: DISCHARGE_SUPPORT_START_GAP, enabled: enabled.discharge_support_start_gap ?? false },
+    { content: TRANSITION_MONTHLY_CASH_GAP, enabled: enabled.transition_monthly_cash_gap ?? false },
+    { content: HOME_OWNERSHIP_INTENT_GAP, enabled: enabled.home_ownership_intent_gap ?? false },
+  ];
+}
+
+describe("Step6A: knowledgeCards.linkedContactIdsとcontactsの積集合が成立すること", () => {
+  test("本番buildPostResult(): knowledgeCardsの全linkedContactIdsがcontacts内に存在する（一般不変条件）", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "undecided",
+      c4: "not_arranged",
+      c6: "will_be_vacant",
+      c7: "family_pays",
+      h1: "sell",
+      h2: "sole_owner",
+      ct1: "fluctuates",
+    });
+    const result = buildPostResult(a);
+    const contactIds = new Set(result.contacts.map((c) => c.id));
+    for (const card of result.knowledgeCards) {
+      for (const linkedId of card.linkedContactIds) {
+        assert.ok(contactIds.has(linkedId), `${card.id}: ${linkedId} がcontactsに存在しない`);
+      }
+    }
+    // 本番registryは全件disabledのため、この不変条件テスト自体はknowledgeCards=[]の下で自明に
+    // 成立する。実データでの成立は下のenabledなregistryを使ったテストで直接確認する。
+    assert.deepEqual(result.knowledgeCards, []);
+  });
+
+  test("enabledなregistry・実際のbuildContacts結果で積集合が成立する（Card Aがhospitalと一致）", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const v = computePostVariables(a);
+    const contacts = buildContacts(a, v);
+    const cards = buildKnowledgeCardsForPostResult(
+      a,
+      v,
+      contacts,
+      testRegistry({ discharge_support_start_gap: true, transition_monthly_cash_gap: true, home_ownership_intent_gap: true }),
+    );
+    assert.ok(cards.length > 0, "この回答ではCard Aが発火するはず");
+    const contactIds = new Set(contacts.map((c) => c.id));
+    for (const card of cards) {
+      for (const linkedId of card.linkedContactIds) {
+        assert.ok(contactIds.has(linkedId), `${card.id}: ${linkedId} がcontactsに存在しない`);
+      }
+    }
+    // hospitalは実際にCard Aのlinked先かつbuildContactsの結果にも含まれるため、
+    // 積集合が空配列ではなく実際に絞り込まれていることを確認する。
+    const cardA = cards.find((c) => c.id === "discharge_support_start_gap");
+    assert.deepEqual(cardA?.linkedContactIds, ["hospital"]);
+  });
+
+  test("enabledなregistry・real_estateしか無いcontactsでもCard Cは残り、real_estateは追加されない", () => {
+    const a = answers({ c6: "will_be_vacant", h1: "sell", h2: "sole_owner", ct1: "fluctuates" });
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(
+      a,
+      v,
+      [{ id: "real_estate", name: "不動産会社", questions: [] }],
+      testRegistry({ home_ownership_intent_gap: true }),
+    );
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.id, "home_ownership_intent_gap");
+    assert.deepEqual(cards[0]?.linkedContactIds, []);
   });
 });
