@@ -54,12 +54,47 @@ describe("knowledgeCards content: 3カードの基本要件", () => {
     }
   });
 
-  test("Card Bのタイトルが確定文言と一致する", () => {
-    assert.equal(TRANSITION_MONTHLY_CASH_GAP.title, "費用の総額だけでは、家族が負担する時期までは分かりません");
+  test("Card Bのタイトルが確定文言（レビュー承認後）と一致する", () => {
+    assert.equal(
+      TRANSITION_MONTHLY_CASH_GAP.title,
+      "家族が費用を負担する可能性がある場合でも、総額だけでは、負担する時期までは分かりません",
+    );
+  });
+
+  test("Card Bのタイトルに旧文言が残っていない", () => {
+    assert.notEqual(TRANSITION_MONTHLY_CASH_GAP.title, "費用の総額だけでは、家族が負担する時期までは分かりません");
+  });
+
+  test("Card Bのcliffは変更されていない", () => {
+    assert.equal(
+      TRANSITION_MONTHLY_CASH_GAP.cliff,
+      "家族が費用を負担する可能性がある場合でも、総額だけでは、支払いが重なる月や家族の立替えが始まる時期までは分かりません。今後3か月を月ごとに分けて確認します。",
+    );
   });
 
   test("Card Bのcliffに断定表現が無い", () => {
     assert.doesNotMatch(TRANSITION_MONTHLY_CASH_GAP.cliff, /必ず不足|必ず立替え|絶対に/);
+  });
+
+  test("Card BのcheckItemsは変更されていない", () => {
+    assert.deepEqual(TRANSITION_MONTHLY_CASH_GAP.checkItems, [
+      "毎月入るお金",
+      "毎月続く支出",
+      "その月だけ発生する支出",
+      "家族が支払う予定の費用と開始月",
+    ]);
+  });
+
+  test("Card BのlinkedContactIdsはfpのままである", () => {
+    assert.deepEqual(TRANSITION_MONTHLY_CASH_GAP.linkedContactIds, ["fp"]);
+  });
+
+  test("Card Aのtitleは変更されていない", () => {
+    assert.equal(DISCHARGE_SUPPORT_START_GAP.title, "退院後の支援は、退院日と同じ日に始まるとは限りません");
+  });
+
+  test("Card Cのtitleは変更されていない", () => {
+    assert.equal(HOME_OWNERSHIP_INTENT_GAP.title, "家の方針が決まっても、名義と本人の意向が揃っているとは限りません");
   });
 
   test("Card CのlinkedContactIdsがlegalだけである", () => {

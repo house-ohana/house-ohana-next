@@ -26,7 +26,7 @@ export const DISCHARGE_SUPPORT_START_GAP: KnowledgeCardContent = {
 
 export const TRANSITION_MONTHLY_CASH_GAP: KnowledgeCardContent = {
   id: "transition_monthly_cash_gap",
-  title: "費用の総額だけでは、家族が負担する時期までは分かりません",
+  title: "家族が費用を負担する可能性がある場合でも、総額だけでは、負担する時期までは分かりません",
   cliff:
     "家族が費用を負担する可能性がある場合でも、総額だけでは、支払いが重なる月や家族の立替えが始まる時期までは分かりません。今後3か月を月ごとに分けて確認します。",
   checkItems: ["毎月入るお金", "毎月続く支出", "その月だけ発生する支出", "家族が支払う予定の費用と開始月"],
