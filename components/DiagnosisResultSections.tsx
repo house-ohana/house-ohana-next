@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { PostResult } from "@/lib/diagnosis/post/types";
 import Notice from "./Notice";
 import DiagnosisShareActions from "./DiagnosisShareActions";
+import KnowledgeCardsSection from "./KnowledgeCardsSection";
 import { GUIDANCE_DISCLAIMER, INSURANCE_GUIDANCE_TEXT } from "@/lib/diagnosis/post/guidanceContent";
 import { CONSULTATION_COPY } from "@/lib/diagnosis/post/consultation";
 import {
@@ -220,6 +221,11 @@ export default function DiagnosisResultSections({ result, resultPath }: Props) {
           ) : null}
         </div>
       ) : null}
+
+      {/* Phase4.1: 見落としやすい崖の知識カード。本番registryは全件enabled: falseのため、
+          通常のknowledgeCardsは空配列であり、その場合KnowledgeCardsSectionはnullを返す
+          （見出し・余白を一切出力しない）。 */}
+      <KnowledgeCardsSection cards={result.knowledgeCards} contacts={result.contacts} />
 
       {/* 4. 今後のために知っておきたいこと（後回し／気を付けたいこと／窓口／自分でできること・専門家に確認すること／詳しく知りたい方へ）
           重要度が低い（今すぐでなくてよい）内容のため、折りたたみ表示にする */}
