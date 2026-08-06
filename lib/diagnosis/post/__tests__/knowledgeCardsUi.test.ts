@@ -310,4 +310,166 @@ describe("結果画面への挿入位置", () => {
     );
     assert.match(source, /<KnowledgeCardsSection cards=\{result\.knowledgeCards\} contacts=\{result\.contacts\} \/>/);
   });
+
+  test("あなたの状況・まず、ここから（今日）の実見出しは、KnowledgeCardsSectionより前にある", () => {
+    const source = readFileSync(
+      fileURLToPath(new URL("../../../../components/DiagnosisResultSections.tsx", import.meta.url)),
+      "utf-8",
+    );
+    // 「あなたの状況」「まず、ここから」はJSXコメントにも登場するため、実際の見出し行
+    // （ファイル内で最後に出現する箇所）を基準にする。コメントの言及だけで偶然テストが
+    // 成功しないようにするため。
+    const indexSituationHeading = source.lastIndexOf("あなたの状況");
+    const indexFirstStepHeading = source.lastIndexOf("まず、ここから");
+    const indexKnowledgeCards = source.indexOf("<KnowledgeCardsSection");
+    assert.ok(indexSituationHeading !== -1 && indexFirstStepHeading !== -1 && indexKnowledgeCards !== -1);
+    assert.ok(indexSituationHeading < indexKnowledgeCards, "「あなたの状況」の実見出しはKnowledgeCardsSectionより前にある");
+    assert.ok(indexFirstStepHeading < indexKnowledgeCards, "「まず、ここから（今日）」の実見出しはKnowledgeCardsSectionより前にある");
+  });
+});
+
+// ---- Step6B: Card A有効化前レビュー（docs/reviews/phase4.1-card-a-enablement-review.md） ----
+// 既存CARD_Aフィクスチャはsources: []のまま維持する（既存テストの前提を壊さないため）。
+// ここでは、Step5後半Bで実際に登録された確定content（DISCHARGE_SUPPORT_START_GAP.sources他）を
+// そのまま使う、Card A有効化専用のフィクスチャを別途用意する。
+
+const CARD_A_WITH_SOURCES: PostKnowledgeCard = {
+  id: DISCHARGE_SUPPORT_START_GAP.id,
+  title: DISCHARGE_SUPPORT_START_GAP.title,
+  cliff: DISCHARGE_SUPPORT_START_GAP.cliff,
+  whyNow: "入院中で、退院後の支援がまだ決まっていないためです。",
+  checkItems: DISCHARGE_SUPPORT_START_GAP.checkItems,
+  linkedContactIds: DISCHARGE_SUPPORT_START_GAP.linkedContactIds,
+  sources: DISCHARGE_SUPPORT_START_GAP.sources,
+  verifiedAt: DISCHARGE_SUPPORT_START_GAP.verifiedAt,
+  reviewBy: DISCHARGE_SUPPORT_START_GAP.reviewBy,
+  rank: 10,
+  urgency: "high",
+};
+
+describe("Card A有効化前レビュー: Card A単独表示", () => {
+  const html = render([CARD_A_WITH_SOURCES], [CONTACT_HOSPITAL]);
+
+  test("「今、見落とさないために」が1回だけ表示される", () => {
+    const matches = html.match(/今、見落とさないために/g) ?? [];
+    assert.equal(matches.length, 1);
+  });
+
+  test("Card Aのtitleが表示される", () => {
+    assert.match(html, new RegExp(CARD_A_WITH_SOURCES.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("cliffが表示される", () => {
+    assert.match(html, new RegExp(CARD_A_WITH_SOURCES.cliff.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("checkItemsがすべて表示される", () => {
+    for (const item of CARD_A_WITH_SOURCES.checkItems) {
+      assert.match(html, new RegExp(item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  });
+
+  test("whyNowが表示される", () => {
+    assert.match(html, /今、確認したい理由：入院中で、退院後の支援がまだ決まっていないためです。/);
+  });
+
+  test("Card Bのtitleは表示されない", () => {
+    assert.doesNotMatch(html, new RegExp(CARD_B.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("Card Cのtitleは表示されない", () => {
+    assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+});
+
+describe("Card A有効化前レビュー: 出典2件", () => {
+  const html = render([CARD_A_WITH_SOURCES], []);
+  const [source1, source2] = DISCHARGE_SUPPORT_START_GAP.sources;
+
+  // renderToStaticMarkupはHTML属性内の"&"を"&amp;"へエスケープするため（React標準の挙動、
+  // KnowledgeCardsSection側の実装ではない）、href比較ではURL中の"&"をエスケープしてから
+  // 正規表現特殊文字をエスケープする。
+  function toHrefPattern(url: string): RegExp {
+    const htmlEscaped = url.replace(/&/g, "&amp;");
+    return new RegExp(`href="${htmlEscaped.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`);
+  }
+
+  test("sourcesが2件登録されている（前提確認）", () => {
+    assert.equal(DISCHARGE_SUPPORT_START_GAP.sources.length, 2);
+  });
+
+  test("A1のorganization・titleが表示される", () => {
+    assert.ok(source1);
+    assert.match(html, new RegExp(`${source1.organization}｜${source1.title}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("A2のorganization・titleが表示される", () => {
+    assert.ok(source2);
+    assert.match(html, new RegExp(`${source2.organization}｜${source2.title}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("A1のURLが正しい", () => {
+    assert.ok(source1);
+    assert.match(html, toHrefPattern(source1.url));
+  });
+
+  test("A2のURLが正しい", () => {
+    assert.ok(source2);
+    assert.match(html, toHrefPattern(source2.url));
+  });
+
+  test("C4（成年後見制度ページ）は表示されない", () => {
+    assert.doesNotMatch(html, /moj\.go\.jp\/MINJI\/a01\.html/);
+    assert.doesNotMatch(html, /成年後見/);
+  });
+
+  test("Card B・Cの出典は表示されない（Card Aのみ渡した場合）", () => {
+    assert.doesNotMatch(html, /登記事項の確認方法/);
+    assert.doesNotMatch(html, /不動産会社/);
+  });
+
+  test("外部リンクは現在の仕様どおりtarget=_blank・rel=noopener noreferrerを維持する", () => {
+    assert.ok(source1);
+    const hrefPattern = toHrefPattern(source1.url).source;
+    assert.match(html, new RegExp(`${hrefPattern} target="_blank" rel="noopener noreferrer"`));
+  });
+});
+
+describe("Card A有効化前レビュー: 相談先の積集合", () => {
+  test("hospital・regional_support・care_managerがすべてcontactsにある場合、元の3件・元順序で表示される", () => {
+    const html = render(
+      [CARD_A_WITH_SOURCES],
+      [CONTACT_HOSPITAL, { id: "regional_support", name: "地域包括支援センター", questions: [] }, CONTACT_CARE_MANAGER],
+    );
+    assert.match(html, /入院先の病院/);
+    assert.match(html, /地域包括支援センター/);
+    assert.match(html, /担当ケアマネジャー/);
+  });
+
+  test("linkedContactIdsが空（contactsが無関係）でもカード本文・出典は表示される", () => {
+    const html = render([CARD_A_WITH_SOURCES], [CONTACT_LEGAL]);
+    assert.match(html, new RegExp(CARD_A_WITH_SOURCES.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(html, /参考情報/);
+    assert.doesNotMatch(html, /関連する相談先/);
+  });
+
+  test("最終contactsが空配列でもカード本文・出典は表示される", () => {
+    const html = render([CARD_A_WITH_SOURCES], []);
+    assert.match(html, new RegExp(CARD_A_WITH_SOURCES.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(html, /参考情報/);
+    assert.doesNotMatch(html, /関連する相談先/);
+  });
+});
+
+describe("Card A有効化前レビュー: レスポンシブ構造（source確認のみ）", () => {
+  test("固定幅・横スクロールを強制するクラスが無い（overflow-x-hidden・whitespace-nowrap・固定px幅）", () => {
+    const source = componentSource();
+    assert.doesNotMatch(source, /overflow-x-hidden/);
+    assert.doesNotMatch(source, /whitespace-nowrap/);
+    assert.doesNotMatch(source, /\bw-\[\d/);
+    assert.doesNotMatch(source, /\bmin-w-\[\d/);
+  });
+
+  // 実機・実ブラウザ幅での最終確認は、Card Aをenabled=trueにする次ステップで実施する
+  // （このテストはソースコード上の構造確認にとどまる）。
 });

@@ -434,3 +434,95 @@ describe("buildKnowledgeCardsForPostResult: PostResult用ラッパー", () => {
     assert.deepEqual(contacts, before);
   });
 });
+
+// ---- Step6B: Card A有効化前レビュー（docs/reviews/phase4.1-card-a-enablement-review.md） ----
+// Card Aだけをenabled=trueにしたテスト用registryを使い、有効化した場合に返る内容が
+// content.tsの確定content・確定reasonIdと完全一致することを確認する。本番registry
+// （registry.ts）は変更しない。
+
+const CARD_A_ONLY = testRegistry({ discharge_support_start_gap: true });
+
+describe("Card A有効化前レビュー: 単独enabled時の内容一致", () => {
+  test("Card A条件成立時、1件だけ返り、idがdischarge_support_start_gapである", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "discharge_support_start_gap");
+  });
+
+  test("Card Bの発火条件を満たす回答でも、Card Aだけenabledなら返らない", () => {
+    const a = answers({ c7: "family_pays" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("Card Cの発火条件を満たす回答でも、Card Aだけenabledなら返らない", () => {
+    const a = answers({ c6: "will_be_vacant", h1: "sell", ct1: "fluctuates" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("title・cliff・checkItemsが確定content（DISCHARGE_SUPPORT_START_GAP）と完全一致する", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.equal(result[0]?.title, DISCHARGE_SUPPORT_START_GAP.title);
+    assert.equal(result[0]?.cliff, DISCHARGE_SUPPORT_START_GAP.cliff);
+    assert.deepEqual(result[0]?.checkItems, DISCHARGE_SUPPORT_START_GAP.checkItems);
+  });
+
+  test("sourcesが確定content（2件）と完全一致する", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.equal(result[0]?.sources.length, 2);
+    assert.deepEqual(result[0]?.sources, DISCHARGE_SUPPORT_START_GAP.sources);
+  });
+
+  test("verifiedAtが2026-08-06、reviewByが2027-02-06である", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.equal(result[0]?.verifiedAt, "2026-08-06");
+    assert.equal(result[0]?.reviewBy, "2027-02-06");
+  });
+
+  test("reasonIdごとのwhyNowが確定文と一致する（住まい未定＋支援未調整の複合ケース）", () => {
+    const a = answers({ c1: "hospitalized", c3: "undecided", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.equal(result[0]?.whyNow, getWhyNow("discharge_support_and_residence_gap"));
+  });
+
+  test("最終contactsとの積集合が反映され、全linkedContactIdsがcontacts内に存在する", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const contacts: PostContactCard[] = [contactFixture("hospital"), contactFixture("care_manager")];
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), contacts, CARD_A_ONLY);
+    assert.deepEqual(result[0]?.linkedContactIds, ["hospital", "care_manager"]);
+    const contactIds = new Set(contacts.map((c) => c.id));
+    for (const id of result[0]?.linkedContactIds ?? []) {
+      assert.ok(contactIds.has(id));
+    }
+  });
+
+  test("最終contactsが空でもCard Aは残り、linkedContactIdsは空配列になる", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0]?.linkedContactIds, []);
+  });
+
+  test("発火条件に不一致な回答では返らない（入院中だが3変数すべてfalse）", () => {
+    const a = answers({ c1: "hospitalized", c3: "return_home", c4: "arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("Card Aだけenabledでも、戻り値は最大1件", () => {
+    const a = answers({ c1: "hospitalized", c3: "undecided", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_A_ONLY);
+    assert.ok(result.length <= 1);
+  });
+
+  test("本番registry（省略時）では、Card A条件成立時でも引き続き空配列", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
+    assert.deepEqual(result, []);
+  });
+});

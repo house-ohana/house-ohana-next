@@ -128,6 +128,35 @@ describe("matchDischargeSupportStartGap: reason優先順", () => {
     assert.equal(m.matched, true);
     assert.equal(m.matched && m.reasonId, "discharge_support_not_arranged");
   });
+
+  // Step6A時点ではsupportUnclear単独／supportPartlyUnclear単独／residenceUnclear単独の
+  // reasonIdが未検証だったため、Card A有効化前レビューとして単独ケースを明示的に追加する。
+  test("supportUnclearのみ（他2フラグfalse）→ discharge_support_not_arranged", () => {
+    const m = matchDischargeSupportStartGap(
+      answers({ c1: "hospitalized" }),
+      vars({ supportUnclear: true, supportPartlyUnclear: false, residenceUnclear: false }),
+    );
+    assert.equal(m.matched, true);
+    assert.equal(m.matched && m.reasonId, "discharge_support_not_arranged");
+  });
+
+  test("supportPartlyUnclearのみ（他2フラグfalse）→ discharge_support_partly_arranged", () => {
+    const m = matchDischargeSupportStartGap(
+      answers({ c1: "hospitalized" }),
+      vars({ supportUnclear: false, supportPartlyUnclear: true, residenceUnclear: false }),
+    );
+    assert.equal(m.matched, true);
+    assert.equal(m.matched && m.reasonId, "discharge_support_partly_arranged");
+  });
+
+  test("residenceUnclearのみ（他2フラグfalse）→ discharge_residence_undecided", () => {
+    const m = matchDischargeSupportStartGap(
+      answers({ c1: "hospitalized" }),
+      vars({ supportUnclear: false, supportPartlyUnclear: false, residenceUnclear: true }),
+    );
+    assert.equal(m.matched, true);
+    assert.equal(m.matched && m.reasonId, "discharge_residence_undecided");
+  });
 });
 
 describe("matchDischargeSupportStartGap: urgency", () => {

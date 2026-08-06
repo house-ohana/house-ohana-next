@@ -324,3 +324,66 @@ describe("Step6A: knowledgeCards.linkedContactIdsとcontactsの積集合が成�
     assert.deepEqual(cards[0]?.linkedContactIds, []);
   });
 });
+
+// ---- Step6B: Card A有効化前レビュー（docs/reviews/phase4.1-card-a-enablement-review.md） ----
+
+describe("Step6B: Card Aだけenabledな場合のPostResult相当の結果", () => {
+  const CARD_A_ONLY = testRegistry({ discharge_support_start_gap: true });
+
+  test("入院中・支援未調整の回答で、Card Aだけenabledなら1件、Card B/Cは混入しない", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "undecided",
+      c4: "not_arranged",
+      c6: "will_be_vacant",
+      c7: "family_pays",
+      h1: "sell",
+      h2: "sole_owner",
+      ct1: "fluctuates",
+    });
+    const v = computePostVariables(a);
+    const contacts = buildContacts(a, v);
+    const cards = buildKnowledgeCardsForPostResult(a, v, contacts, CARD_A_ONLY);
+    assert.equal(cards.length, 1);
+    assert.deepEqual(
+      cards.map((c) => c.id),
+      ["discharge_support_start_gap"],
+    );
+  });
+
+  test("実際のbuildContactsとの積集合で、result.knowledgeCardsの全linkedContactIdsがcontacts内に存在する", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const v = computePostVariables(a);
+    const contacts = buildContacts(a, v);
+    const cards = buildKnowledgeCardsForPostResult(a, v, contacts, CARD_A_ONLY);
+    const contactIds = new Set(contacts.map((c) => c.id));
+    for (const card of cards) {
+      for (const linkedId of card.linkedContactIds) {
+        assert.ok(contactIds.has(linkedId), `${card.id}: ${linkedId}`);
+      }
+    }
+  });
+
+  test("Card Aが未発火の回答では、Card Aだけenabledでも空配列", () => {
+    const a = answers({});
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(a, v, buildContacts(a, v), CARD_A_ONLY);
+    assert.deepEqual(cards, []);
+  });
+
+  test("本番回帰: 本番registry（省略時）ではCard Aの発火条件を満たす回答でもknowledgeCards=[]", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+  });
+
+  test("本番回帰: firstAction・nextActions・contactsはCard A有効化テストの影響を受けない", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged" });
+    const v = computePostVariables(a);
+    const result = buildPostResult(a);
+    assert.deepEqual(result.firstAction, buildFirstAndNextActions(a, v).firstAction);
+    assert.deepEqual(result.nextActions, buildFirstAndNextActions(a, v).nextActions);
+    assert.deepEqual(result.contacts, buildContacts(a, v));
+  });
+});
