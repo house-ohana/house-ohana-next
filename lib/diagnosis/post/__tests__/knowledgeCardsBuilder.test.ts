@@ -607,3 +607,247 @@ describe("Card A本番有効化後: 本番registry（省略）での確認", () 
     assert.deepEqual(result[0]?.linkedContactIds, []);
   });
 });
+
+// ---- Step7A: Card B有効化前レビュー（docs/reviews/phase4.1-card-b-enablement-review.md） ----
+// Card Bだけをenabled=trueにしたテスト用registryを使い、有効化した場合に返る内容が
+// content.tsの確定content・確定reasonIdと完全一致することを確認する。本番registry
+// （registry.ts）は変更しない（本番はCard Aだけenabled=true、Card B・Cはenabled=falseのまま）。
+
+const CARD_B_ONLY = testRegistry({ transition_monthly_cash_gap: true });
+
+// familyContribution=true・moneyNeedsEarlyCheck=true（urgent）を、実際の回答から生成する。
+// c1=hospitalizedだがc3/c4は明確な値にしてCard Aを発火させない。c6=no_home_issueでCard Cも
+// 発火させない（Card B単独の検証のため）。
+const CARD_B_URGENT_ONLY: PostValidAnswers = answers({
+  c1: "hospitalized",
+  c2: "within_7_days",
+  c3: "return_home",
+  c4: "arranged",
+  c6: "no_home_issue",
+  c7: "family_pays",
+});
+
+// familyContribution=trueだが期限系フラグがすべてfalse（nonurgent）。
+const CARD_B_NONURGENT_ONLY: PostValidAnswers = answers({
+  c1: "discharged",
+  c2: "mostly_settled",
+  c6: "no_home_issue",
+  c7: "family_pays",
+});
+
+describe("Card B有効化前レビュー: 単独enabled時の内容一致", () => {
+  test("urgent条件成立時: 1件返り、id・rank15・reasonId(urgent)・urgency=highが正しい", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_URGENT_ONLY,
+      computePostVariables(CARD_B_URGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result.length, 1);
+    const card = result[0];
+    assert.ok(card);
+    assert.equal(card.id, "transition_monthly_cash_gap");
+    assert.equal(card.rank, 15);
+    assert.equal(card.urgency, "high");
+    assert.equal(card.whyNow, getWhyNow("money_family_contribution_urgent"));
+  });
+
+  test("nonurgent条件成立時: rank30・base reason・urgency=medium", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result.length, 1);
+    const card = result[0];
+    assert.ok(card);
+    assert.equal(card.rank, 30);
+    assert.equal(card.urgency, "medium");
+    assert.equal(card.whyNow, getWhyNow("money_family_contribution"));
+  });
+
+  test("Card Aの発火条件を満たす回答でも、Card Bだけenabledなら返らない", () => {
+    const a = answers({ c1: "hospitalized", c4: "not_arranged" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_B_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("Card Cの発火条件を満たす回答でも、Card Bだけenabledなら返らない", () => {
+    const a = answers({ c6: "will_be_vacant", h1: "sell", ct1: "fluctuates" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_B_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("title・cliff・checkItemsが確定content（TRANSITION_MONTHLY_CASH_GAP）と完全一致する", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result[0]?.title, TRANSITION_MONTHLY_CASH_GAP.title);
+    assert.equal(result[0]?.cliff, TRANSITION_MONTHLY_CASH_GAP.cliff);
+    assert.deepEqual(result[0]?.checkItems, TRANSITION_MONTHLY_CASH_GAP.checkItems);
+  });
+
+  test("sourcesが確定content（3件）と完全一致する", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result[0]?.sources.length, 3);
+    assert.deepEqual(result[0]?.sources, TRANSITION_MONTHLY_CASH_GAP.sources);
+  });
+
+  test("verifiedAtが2026-08-06、reviewByが2027-02-06である", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result[0]?.verifiedAt, "2026-08-06");
+    assert.equal(result[0]?.reviewBy, "2027-02-06");
+  });
+
+  test("familyContribution=falseなら返らない", () => {
+    const a = answers({ c7: "likely_sufficient" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_B_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("moneyUnclear単独（familyContribution=false）では返らない", () => {
+    const a = answers({ c7: "unknown_amount" });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], CARD_B_ONLY);
+    assert.deepEqual(result, []);
+  });
+
+  test("最終contactsとの積集合: fpがある場合linkedContactIds=['fp']", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [contactFixture("fp")],
+      CARD_B_ONLY,
+    );
+    assert.deepEqual(result[0]?.linkedContactIds, ["fp"]);
+  });
+
+  test("最終contactsにfpが無い場合でもCard Bは残り、linkedContactIds=[]", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [contactFixture("legal"), contactFixture("real_estate")],
+      CARD_B_ONLY,
+    );
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0]?.linkedContactIds, []);
+  });
+
+  test("本番registry（省略時）ではCard B条件成立時でも空配列（Card Bはenabled=falseのまま）", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_URGENT_ONLY,
+      computePostVariables(CARD_B_URGENT_ONLY),
+      [],
+    );
+    assert.deepEqual(result, []);
+  });
+});
+
+describe("Card A+B競合ケース（docs/reviews/phase4.1-card-b-enablement-review.md 第6章）", () => {
+  // Card A・Bがともに発火し、Card Cは発火しない回答（c6=no_home_issueでCard Cを止める）。
+  const AB_URGENT: PostValidAnswers = answers({
+    c1: "hospitalized",
+    c2: "within_7_days",
+    c3: "return_home",
+    c4: "partly_arranged",
+    c6: "no_home_issue",
+    c7: "family_pays",
+  });
+  const AB_NONURGENT: PostValidAnswers = answers({
+    c1: "hospitalized",
+    c2: "date_unknown",
+    c3: "return_home",
+    c4: "partly_arranged",
+    c6: "no_home_issue",
+    c7: "family_pays",
+  });
+  const AB_ENABLED = testRegistry({ discharge_support_start_gap: true, transition_monthly_cash_gap: true });
+
+  test("AB-01: Card A(rank10)・Card B urgent(rank15) → [A, B]の順", () => {
+    const result = buildKnowledgeCardsForPostResult(AB_URGENT, computePostVariables(AB_URGENT), [], AB_ENABLED);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+  });
+
+  test("AB-02: Card A(rank10)・Card B nonurgent(rank30) → [A, B]の順", () => {
+    const result = buildKnowledgeCardsForPostResult(AB_NONURGENT, computePostVariables(AB_NONURGENT), [], AB_ENABLED);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+  });
+
+  test("AB-03: Card A不成立・Card B urgent成立（Aはenabled=false） → Bのみ1件", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_URGENT_ONLY,
+      computePostVariables(CARD_B_URGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "transition_monthly_cash_gap");
+  });
+
+  test("AB-04: Card A不成立・Card B nonurgent成立（Aはenabled=false） → Bのみ1件", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      CARD_B_NONURGENT_ONLY,
+      computePostVariables(CARD_B_NONURGENT_ONLY),
+      [],
+      CARD_B_ONLY,
+    );
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "transition_monthly_cash_gap");
+  });
+
+  test("AB-05: A・B・Cすべて発火・すべてenabled → 最大2件でA・Bが選ばれ、Cへ差し替わらない（urgent Bでrank15<C rank20）", () => {
+    const a = ALL_THREE_FIRE_URGENT;
+    const allEnabled = testRegistry({
+      discharge_support_start_gap: true,
+      transition_monthly_cash_gap: true,
+      home_ownership_intent_gap: true,
+    });
+    const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [], allEnabled);
+    assert.equal(result.length, 2);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+  });
+
+  test("linkedContactIdsが積集合で空になっても、Bが別カードへ差し替わらない（Cへ差し替え無し）", () => {
+    const result = buildKnowledgeCardsForPostResult(
+      AB_URGENT,
+      computePostVariables(AB_URGENT),
+      [contactFixture("legal")], // A・Bどちらのlinked先とも無関係
+      AB_ENABLED,
+    );
+    assert.equal(result.length, 2);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+    assert.deepEqual(result[0]?.linkedContactIds, []);
+    assert.deepEqual(result[1]?.linkedContactIds, []);
+  });
+
+  test("本番回帰: A+B同時成立の回答でも、本番registry（省略時）ではCard Aだけ返る", () => {
+    const result = buildKnowledgeCardsForPostResult(AB_URGENT, computePostVariables(AB_URGENT), []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "discharge_support_start_gap");
+  });
+});

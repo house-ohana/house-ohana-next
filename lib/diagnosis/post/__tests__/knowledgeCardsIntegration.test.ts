@@ -447,3 +447,89 @@ describe("Card A本番有効化後: 表示ケース・非表示ケース", () =>
     assert.deepEqual(result.knowledgeCards, []);
   });
 });
+
+// ---- Step7A: Card B有効化前レビュー（docs/reviews/phase4.1-card-b-enablement-review.md） ----
+
+describe("Card B有効化前レビュー: 実回答ケース（テスト用registry）", () => {
+  const CARD_B_ONLY = testRegistry({ transition_monthly_cash_gap: true });
+  const AB_ENABLED = testRegistry({ discharge_support_start_gap: true, transition_monthly_cash_gap: true });
+
+  test("Card B urgentの実回答ケース: familyContribution=true・期限が近い → 1件、rank15・urgency=high", () => {
+    const a = answers({ c1: "hospitalized", c2: "within_7_days", c3: "return_home", c4: "arranged", c6: "no_home_issue", c7: "family_pays" });
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(a, v, buildContacts(a, v), CARD_B_ONLY);
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.id, "transition_monthly_cash_gap");
+    assert.equal(cards[0]?.rank, 15);
+    assert.equal(cards[0]?.urgency, "high");
+  });
+
+  test("Card B nonurgentの実回答ケース: familyContribution=trueだが期限系フラグ無し → 1件、rank30・urgency=medium", () => {
+    const a = answers({ c7: "family_pays" });
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(a, v, buildContacts(a, v), CARD_B_ONLY);
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.id, "transition_monthly_cash_gap");
+    assert.equal(cards[0]?.rank, 30);
+    assert.equal(cards[0]?.urgency, "medium");
+  });
+
+  test("familyContributionなしの非表示ケース: knowledgeCards=[]（Card Bだけenabledでも）", () => {
+    const a = answers({});
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(a, v, buildContacts(a, v), CARD_B_ONLY);
+    assert.deepEqual(cards, []);
+  });
+
+  test("A+B同時成立ケース: テスト用registryでCard A・Bが両方enabledなら[A, B]の順で返る", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "return_home",
+      c4: "partly_arranged",
+      c6: "no_home_issue",
+      c7: "family_pays",
+    });
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(a, v, buildContacts(a, v), AB_ENABLED);
+    assert.deepEqual(
+      cards.map((c) => c.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+  });
+
+  test("B・C条件成立だがBのみenabledなケース: Cは混入せずBだけ返る", () => {
+    const a = answers({
+      c1: "discharged",
+      c6: "will_be_vacant",
+      c7: "family_pays",
+      h1: "sell",
+      h2: "sole_owner",
+      ct1: "fluctuates",
+    });
+    const v = computePostVariables(a);
+    const cards = buildKnowledgeCardsForPostResult(a, v, buildContacts(a, v), CARD_B_ONLY);
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.id, "transition_monthly_cash_gap");
+  });
+
+  test("本番回帰: 本番registry（省略時）では、現在Aだけが表示され、B・Cは表示されない", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "undecided",
+      c4: "not_arranged",
+      c6: "will_be_vacant",
+      c7: "family_pays",
+      h1: "sell",
+      h2: "sole_owner",
+      ct1: "fluctuates",
+    });
+    const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap"],
+    );
+  });
+});

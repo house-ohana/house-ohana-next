@@ -526,3 +526,123 @@ describe("Card A本番有効化後: buildPostResult()の実データでの描画
     assert.doesNotMatch(html, /参考情報/);
   });
 });
+
+// ---- Step7A: Card B有効化前レビュー（docs/reviews/phase4.1-card-b-enablement-review.md） ----
+// Card Bの確定content（実際の3出典を含む）をそのまま使ったフィクスチャ。
+// 本番registryはCard Bをまだenabled=falseのままなので、ここではKnowledgeCardsSectionへ
+// テスト用に組み立てたPostKnowledgeCard[]を直接渡して描画を確認する。
+
+const CARD_B_WITH_SOURCES: PostKnowledgeCard = {
+  id: TRANSITION_MONTHLY_CASH_GAP.id,
+  title: TRANSITION_MONTHLY_CASH_GAP.title,
+  cliff: TRANSITION_MONTHLY_CASH_GAP.cliff,
+  whyNow: "家族が費用を負担する可能性があり、当面の支払い時期を早めに確認したい状況であるためです。",
+  checkItems: TRANSITION_MONTHLY_CASH_GAP.checkItems,
+  linkedContactIds: TRANSITION_MONTHLY_CASH_GAP.linkedContactIds,
+  sources: TRANSITION_MONTHLY_CASH_GAP.sources,
+  verifiedAt: TRANSITION_MONTHLY_CASH_GAP.verifiedAt,
+  reviewBy: TRANSITION_MONTHLY_CASH_GAP.reviewBy,
+  rank: 15,
+  urgency: "high",
+};
+
+const CONTACT_FP: PostContactCard = { id: "fp", name: "ファイナンシャルプランナー", questions: [] };
+
+describe("Card B有効化前レビュー: Card B単独表示", () => {
+  const html = render([CARD_B_WITH_SOURCES], [CONTACT_FP]);
+
+  test("「今、見落とさないために」が1回だけ表示される", () => {
+    const matches = html.match(/今、見落とさないために/g) ?? [];
+    assert.equal(matches.length, 1);
+  });
+
+  test("Card Bのtitleが1回だけ表示される", () => {
+    const escaped = CARD_B_WITH_SOURCES.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const matches = html.match(new RegExp(escaped, "g")) ?? [];
+    assert.equal(matches.length, 1);
+  });
+
+  test("cliffが表示される", () => {
+    assert.match(html, new RegExp(CARD_B_WITH_SOURCES.cliff.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("checkItemsがすべて表示される", () => {
+    for (const item of CARD_B_WITH_SOURCES.checkItems) {
+      assert.match(html, new RegExp(item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  });
+
+  test("whyNowが表示される", () => {
+    assert.match(html, /今、確認したい理由：家族が費用を負担する可能性があり、当面の支払い時期を早めに確認したい状況であるためです。/);
+  });
+
+  test("出典3件が表示される（B1・B2・B3のorganization・title・url）", () => {
+    for (const source of TRANSITION_MONTHLY_CASH_GAP.sources) {
+      assert.match(html, new RegExp(`${source.organization}｜${source.title}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      const htmlEscapedUrl = source.url.replace(/&/g, "&amp;").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      assert.match(html, new RegExp(`href="${htmlEscapedUrl}"`));
+    }
+  });
+
+  test("Card A・Cのtitleは表示されない", () => {
+    assert.doesNotMatch(html, new RegExp(CARD_A.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("C4・Card A・Cの出典は混入しない", () => {
+    assert.doesNotMatch(html, /成年後見/);
+    assert.doesNotMatch(html, /疾病・事業及び在宅医療に係る医療体制について/);
+    assert.doesNotMatch(html, /登記事項の確認方法/);
+  });
+
+  test("FP（fp）だけが関連する相談先として表示される", () => {
+    assert.match(html, /関連する相談先/);
+    assert.match(html, /ファイナンシャルプランナー/);
+  });
+
+  test("fp不在時は「関連する相談先」見出しが表示されない", () => {
+    const htmlWithoutFp = render([CARD_B_WITH_SOURCES], [CONTACT_LEGAL]);
+    assert.doesNotMatch(htmlWithoutFp, /関連する相談先/);
+  });
+
+  test("fp不在でも本文と出典3件は表示される", () => {
+    const htmlWithoutFp = render([CARD_B_WITH_SOURCES], [CONTACT_LEGAL]);
+    assert.match(htmlWithoutFp, new RegExp(CARD_B_WITH_SOURCES.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(htmlWithoutFp, /参考情報/);
+    for (const source of TRANSITION_MONTHLY_CASH_GAP.sources) {
+      assert.match(htmlWithoutFp, new RegExp(source.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  });
+});
+
+describe("Card B有効化前レビュー: A+B同時表示", () => {
+  const html = render([CARD_A_WITH_SOURCES, CARD_B_WITH_SOURCES], [CONTACT_HOSPITAL, CONTACT_FP]);
+
+  test("Knowledge Cardsの見出しは1回だけ", () => {
+    const matches = html.match(/今、見落とさないために/g) ?? [];
+    assert.equal(matches.length, 1);
+  });
+
+  test("Card Aが先、Card Bが後（渡した順）", () => {
+    const indexA = html.indexOf(CARD_A_WITH_SOURCES.title);
+    const indexB = html.indexOf(CARD_B_WITH_SOURCES.title);
+    assert.ok(indexA !== -1 && indexB !== -1 && indexA < indexB);
+  });
+
+  test("Card Aの出典とCard Bの出典が両方表示され、混ざらない", () => {
+    assert.match(html, /疾病・事業及び在宅医療に係る医療体制について/);
+    assert.match(html, /令和7年度地域の在宅医療の体制整備に向けた調査・連携支援事業/);
+    assert.match(html, /サービスにかかる利用料/);
+    assert.match(html, /介護サービスにかかる概算の料金を知りたい/);
+    assert.match(html, /ライフプランシミュレーター/);
+  });
+
+  test("Card Aの相談先（病院）とCard Bの相談先（FP）がそれぞれ正しく表示される", () => {
+    assert.match(html, /入院先の病院/);
+    assert.match(html, /ファイナンシャルプランナー/);
+  });
+
+  test("Card Cは表示されない", () => {
+    assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+});

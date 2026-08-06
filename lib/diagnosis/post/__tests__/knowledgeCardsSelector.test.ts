@@ -232,6 +232,24 @@ describe("selectKnowledgeCards: 出力内容", () => {
     assert.equal(card.reviewBy, DISCHARGE_SUPPORT_START_GAP.reviewBy);
     assert.equal(card.rank, 10);
   });
+
+  test("12b. Card Bのcontentが正しく結合される（sources3件を含む、Card B有効化前レビュー）", () => {
+    const result = selectKnowledgeCards(
+      [matchedTrue("transition_monthly_cash_gap", 30)],
+      testRegistry({ transition_monthly_cash_gap: true }),
+    );
+    const card = result[0];
+    assert.ok(card);
+    assert.equal(card.title, TRANSITION_MONTHLY_CASH_GAP.title);
+    assert.equal(card.cliff, TRANSITION_MONTHLY_CASH_GAP.cliff);
+    assert.deepEqual(card.checkItems, TRANSITION_MONTHLY_CASH_GAP.checkItems);
+    assert.deepEqual(card.linkedContactIds, TRANSITION_MONTHLY_CASH_GAP.linkedContactIds);
+    assert.equal(card.sources.length, 3);
+    assert.deepEqual(card.sources, TRANSITION_MONTHLY_CASH_GAP.sources);
+    assert.equal(card.verifiedAt, TRANSITION_MONTHLY_CASH_GAP.verifiedAt);
+    assert.equal(card.reviewBy, TRANSITION_MONTHLY_CASH_GAP.reviewBy);
+    assert.equal(card.rank, 30);
+  });
 });
 
 describe("selectKnowledgeCards: 副作用が無いこと・決定論性", () => {
