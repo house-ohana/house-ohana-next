@@ -140,18 +140,196 @@ describe("knowledgeCards registry: enabledの分離", () => {
   });
 });
 
-describe("knowledgeCards: 出典未確認状態の表現と検証関数", () => {
-  test("Step1の全カードは出典未確認状態（sources: [] / verifiedAt: null / reviewBy: null）", () => {
+// 2026-08-06レビュー（docs/reviews/phase4.1-knowledge-card-source-review.md）で採用された
+// 出典。並び順（A1→A2、B1→B2→B3、C1→C2→C3）もレビュー文書の採用順に合わせている。
+const EXPECTED_SOURCES_A = [
+  {
+    title: "疾病・事業及び在宅医療に係る医療体制について",
+    organization: "厚生労働省",
+    url: "https://www.mhlw.go.jp/web/t_doc?dataId=00tc7580&dataType=1&pageNo=7",
+    accessedAt: "2026-08-06",
+  },
+  {
+    title: "令和7年度地域の在宅医療の体制整備に向けた調査・連携支援事業",
+    organization: "厚生労働省",
+    url: "https://www.mhlw.go.jp/stf/newpage_72086.html",
+    accessedAt: "2026-08-06",
+  },
+];
+
+const EXPECTED_SOURCES_B = [
+  {
+    title: "サービスにかかる利用料",
+    organization: "厚生労働省（介護サービス情報公表システム）",
+    url: "https://www.kaigokensaku.mhlw.go.jp/commentary/fee.html",
+    accessedAt: "2026-08-06",
+  },
+  {
+    title: "介護サービスにかかる概算の料金を知りたい",
+    organization: "厚生労働省（介護サービス情報公表システム）",
+    url: "https://www.kaigokensaku.mhlw.go.jp/help/page6.html",
+    accessedAt: "2026-08-06",
+  },
+  {
+    title: "ライフプランシミュレーター",
+    organization: "金融庁",
+    url: "https://www.fsa.go.jp/policy/nisa2/lifeplan-simulator/",
+    accessedAt: "2026-08-06",
+  },
+];
+
+const EXPECTED_SOURCES_C = [
+  {
+    title: "不動産登記のABC",
+    organization: "法務省",
+    url: "https://www.moj.go.jp/MINJI/minji02",
+    accessedAt: "2026-08-06",
+  },
+  {
+    title: "登記の申請を御検討されている皆さまへ",
+    organization: "法務局",
+    url: "https://houmukyoku.moj.go.jp/homu/page_000001_00051.html",
+    accessedAt: "2026-08-06",
+  },
+  {
+    title: "COLUMN 高齢者の認知機能障害に応じた消費者トラブルと対応策の検討に関する研究（令和5年版消費者白書）",
+    organization: "消費者庁",
+    url: "https://www.caa.go.jp/policies/policy/consumer_research/white_paper/2023/white_paper_column_03.html",
+    accessedAt: "2026-08-06",
+  },
+];
+
+const PUBLIC_DOMAINS = [
+  "www.mhlw.go.jp",
+  "www.kaigokensaku.mhlw.go.jp",
+  "www.fsa.go.jp",
+  "www.moj.go.jp",
+  "houmukyoku.moj.go.jp",
+  "www.caa.go.jp",
+];
+
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+
+describe("knowledgeCards: 出典登録（2026-08-06レビュー反映後）", () => {
+  test("Card Aのsourcesは2件で、レビュー文書採用のA1→A2の順で一致する", () => {
+    assert.deepEqual(DISCHARGE_SUPPORT_START_GAP.sources, EXPECTED_SOURCES_A);
+  });
+
+  test("Card Bのsourcesは3件で、レビュー文書採用のB1→B2→B3の順で一致する", () => {
+    assert.deepEqual(TRANSITION_MONTHLY_CASH_GAP.sources, EXPECTED_SOURCES_B);
+  });
+
+  test("Card Cのsourcesは3件で、レビュー文書採用のC1→C2→C3の順で一致する", () => {
+    assert.deepEqual(HOME_OWNERSHIP_INTENT_GAP.sources, EXPECTED_SOURCES_C);
+  });
+
+  test("全カード合計で8件のsourcesが登録されている", () => {
+    const total = KNOWLEDGE_CARD_CONTENTS.reduce((sum, c) => sum + c.sources.length, 0);
+    assert.equal(total, 8);
+  });
+
+  test("同一カード内にURLの重複が無い", () => {
     for (const content of KNOWLEDGE_CARD_CONTENTS) {
-      assert.deepEqual(content.sources, []);
-      assert.equal(content.verifiedAt, null);
-      assert.equal(content.reviewBy, null);
+      const urls = content.sources.map((s) => s.url);
+      assert.equal(new Set(urls).size, urls.length, `${content.id}: URL重複`);
     }
   });
 
-  test("disabledカード（未確認状態）はisContentReadyToEnableでfalseになる", () => {
+  test("全sourceのurlがhttpsで始まる", () => {
     for (const content of KNOWLEDGE_CARD_CONTENTS) {
-      assert.equal(isContentReadyToEnable(content), false);
+      for (const source of content.sources) {
+        assert.ok(source.url.startsWith("https://"), `${content.id}: ${source.url}`);
+      }
+    }
+  });
+
+  test("全sourceのurlが公的機関ドメインである", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      for (const source of content.sources) {
+        const host = new URL(source.url).host;
+        assert.ok(PUBLIC_DOMAINS.includes(host), `${content.id}: 未知のドメイン ${host}`);
+      }
+    }
+  });
+
+  test("sourcesに追跡パラメータ（utm_・referral等）が含まれない", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      for (const source of content.sources) {
+        assert.doesNotMatch(source.url, /[?&](utm_|ref=|referral)/i, `${content.id}: ${source.url}`);
+      }
+    }
+  });
+
+  test("Card Cに成年後見制度ページ（C4）のURLが含まれない", () => {
+    const urls = HOME_OWNERSHIP_INTENT_GAP.sources.map((s) => s.url);
+    assert.ok(!urls.includes("https://www.moj.go.jp/MINJI/a01.html"));
+  });
+
+  test("いずれのcontentにも成年後見制度ページのURLが含まれない", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      const urls = content.sources.map((s) => s.url);
+      assert.ok(!urls.includes("https://www.moj.go.jp/MINJI/a01.html"), `${content.id}`);
+    }
+  });
+
+  test("空文字列・PENDING・TBDがsources/verifiedAt/reviewByに含まれない", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      assert.notEqual(content.verifiedAt, "");
+      assert.notEqual(content.reviewBy, "");
+      assert.doesNotMatch(content.verifiedAt ?? "", /PENDING|TBD/i);
+      assert.doesNotMatch(content.reviewBy ?? "", /PENDING|TBD/i);
+      for (const source of content.sources) {
+        assert.notEqual(source.organization, "");
+        assert.notEqual(source.title, "");
+        assert.notEqual(source.url, "");
+        assert.notEqual(source.accessedAt, "");
+        assert.doesNotMatch(`${source.organization}${source.title}${source.url}`, /PENDING|TBD/i);
+      }
+    }
+  });
+});
+
+describe("knowledgeCards: verifiedAt・reviewByの日付", () => {
+  test("全カードのverifiedAtが実レビュー日（2026-08-06）と一致する", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      assert.equal(content.verifiedAt, "2026-08-06");
+    }
+  });
+
+  test("全カードのreviewByがverifiedAtの6か月後（2027-02-06）と一致する", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      assert.equal(content.reviewBy, "2027-02-06");
+    }
+  });
+
+  test("verifiedAt・reviewByがYYYY-MM-DD形式である（時刻・タイムゾーンを含まない）", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      assert.match(content.verifiedAt ?? "", YMD);
+      assert.match(content.reviewBy ?? "", YMD);
+    }
+  });
+
+  test("全sourceのaccessedAtがYYYY-MM-DD形式で2026-08-06と一致する", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      for (const source of content.sources) {
+        assert.match(source.accessedAt, YMD);
+        assert.equal(source.accessedAt, "2026-08-06");
+      }
+    }
+  });
+});
+
+describe("knowledgeCards: readinessとregistryの分離", () => {
+  test("3カードすべてisContentReadyToEnableがtrueになる", () => {
+    for (const content of KNOWLEDGE_CARD_CONTENTS) {
+      assert.equal(isContentReadyToEnable(content), true, `${content.id}`);
+    }
+  });
+
+  test("ready=trueになっても、registry側のenabledは3カードともfalseのまま", () => {
+    // content.tsの出典登録とregistry.tsのenabledは独立している（docs/03 第4章）。
+    for (const entry of KNOWLEDGE_CARD_REGISTRY) {
+      assert.equal(entry.enabled, false, entry.content.id);
     }
   });
 
@@ -166,7 +344,12 @@ describe("knowledgeCards: 出典未確認状態の表現と検証関数", () => 
   });
 
   test("isContentReadyToEnable: sourcesが空ならfalse", () => {
-    const notReady: KnowledgeCardContent = { ...DISCHARGE_SUPPORT_START_GAP, verifiedAt: "2026-01-01", reviewBy: "2026-07-01" };
+    const notReady: KnowledgeCardContent = {
+      ...DISCHARGE_SUPPORT_START_GAP,
+      sources: [],
+      verifiedAt: "2026-01-01",
+      reviewBy: "2026-07-01",
+    };
     assert.equal(isContentReadyToEnable(notReady), false);
   });
 
