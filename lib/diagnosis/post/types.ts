@@ -3,6 +3,7 @@
 // 質問構造の詳細は lib/diagnosis/post/questions.ts を参照。
 
 import type { PostArtifacts } from "./artifacts/types";
+import type { PostKnowledgeCard } from "./knowledgeCards/types";
 
 // ---- 共通質問（C1〜C8） ----
 
@@ -122,4 +123,9 @@ export type PostResult = {
   consultation: PostConsultationSection;
   /** Phase3成果物（今回整理できたこと／まだ確認できていないこと）。buildPostArtifactsが生成する。 */
   artifacts: PostArtifacts;
+  /**
+   * Phase4.1「見落としやすい崖」知識カード。buildKnowledgeCardsが生成する。
+   * 本番registryは3件ともenabled: falseのため、Step3完了時点では常に空配列になる。
+   */
+  knowledgeCards: PostKnowledgeCard[];
 };
