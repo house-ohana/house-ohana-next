@@ -8,11 +8,14 @@ import { DISCHARGE_SUPPORT_START_GAP, TRANSITION_MONTHLY_CASH_GAP, HOME_OWNERSHI
  * discharge_support_start_gap（Card A）は、docs/reviews/phase4.1-knowledge-card-source-review.md
  * および docs/reviews/phase4.1-card-a-enablement-review.md のレビューを経て enabled: true とした
  * （2026-08-06、docs/reviews/phase4.1-card-a-enablement-result.md参照）。
- * transition_monthly_cash_gap・home_ownership_intent_gap（Card B・C）は、出典確認・専門家レビューは
- * 完了しているが、有効化前レビューが未実施のため enabled: false のまま維持する。
+ * transition_monthly_cash_gap（Card B）は、docs/reviews/phase4.1-knowledge-card-source-review.md
+ * および docs/reviews/phase4.1-card-b-enablement-review.md のレビューを経て enabled: true とした
+ * （2026-08-06、docs/reviews/phase4.1-card-b-enablement-result.md参照）。
+ * home_ownership_intent_gap（Card C）は、出典確認・専門家レビューは完了しているが、
+ * 有効化前レビューが未実施のため enabled: false のまま維持する。
  */
 export const KNOWLEDGE_CARD_REGISTRY: readonly KnowledgeCardRegistryEntry[] = [
   { content: DISCHARGE_SUPPORT_START_GAP, enabled: true },
-  { content: TRANSITION_MONTHLY_CASH_GAP, enabled: false },
+  { content: TRANSITION_MONTHLY_CASH_GAP, enabled: true },
   { content: HOME_OWNERSHIP_INTENT_GAP, enabled: false },
 ];

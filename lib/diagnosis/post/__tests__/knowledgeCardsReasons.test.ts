@@ -47,24 +47,33 @@ describe("knowledgeCards reasons: whyNow固定変換", () => {
     }
   });
 
-  test("Card Bのurgent文言に「必要がある」という断定表現を使っていない", () => {
-    assert.doesNotMatch(getWhyNow("money_family_contribution_urgent"), /必要がある/);
+  test("Card Bのurgent文言が確定文言（コピーレビュー承認後）と一致する", () => {
+    assert.equal(
+      getWhyNow("money_family_contribution_urgent"),
+      "今後の生活にかかる費用を確認する必要があるため、支払いがかさなる時期や、家族による費用負担がいつ必要になるかを早めに整理しておきましょう。",
+    );
   });
 
-  test("代表的なreasonIdの文言が確定文言と一致する", () => {
-    assert.equal(getWhyNow("discharge_support_not_arranged"), "入院中で、退院後の支援がまだ決まっていないためです。");
+  test("代表的なreasonIdの文言が確定文言（コピーレビュー承認後）と一致する", () => {
+    assert.equal(
+      getWhyNow("discharge_support_not_arranged"),
+      "退院後の生活サポートがまだ決まっていないため、必要なサポートがいつから始まるか確認する必要があります。",
+    );
     assert.equal(
       getWhyNow("discharge_support_and_residence_gap"),
-      "入院中で、退院後の住まいや支援に未調整が残っているためです。",
+      "退院後の住まいがまだ決まっておらず、生活サポートにも確認が必要な点が残っているため、退院後の生活に向けて、必要な準備を整理しておく必要があります。",
     );
     assert.equal(
       getWhyNow("money_family_contribution_and_unclear"),
-      "家族が費用を負担する可能性があり、費用の見通しもまだ明確でないためです。",
+      "今後の生活にかかる費用がまだ整理できていないため、支払いがかさなる時期と、家族による費用負担がいつ必要になるかをあわせて確認する必要があります。",
     );
-    assert.equal(getWhyNow("home_contract_concern"), "契約内容について、本人の理解を確認したい点があるためです。");
+    assert.equal(
+      getWhyNow("home_contract_concern"),
+      "契約に関して気になる点があるため、申込みや署名などを進める前に、内容を専門家へ確認する必要があります。",
+    );
     assert.equal(
       getWhyNow("home_ownership_and_intent_unclear"),
-      "家の名義と本人の理解・意向の両方に未確認があるためです。",
+      "家の名義と本人の意向の両方が確認できていないため、家のことを具体的に進める前に確認する必要があります。",
     );
   });
 

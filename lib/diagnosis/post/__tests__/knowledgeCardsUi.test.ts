@@ -79,8 +79,8 @@ describe("KnowledgeCardsSection: 0件", () => {
     assert.equal(render([], []), "");
   });
 
-  test("3.「今、見落とさないために」が存在しない", () => {
-    assert.doesNotMatch(render([], [CONTACT_HOSPITAL]), /今、見落とさないために/);
+  test("3.「見落としがちなポイント」が存在しない", () => {
+    assert.doesNotMatch(render([], [CONTACT_HOSPITAL]), /見落としがちなポイント/);
   });
 
   test("4. section wrapper・空の余白用要素が存在しない", () => {
@@ -93,7 +93,7 @@ describe("KnowledgeCardsSection: 1件", () => {
   const html = render([CARD_A], [CONTACT_HOSPITAL]);
 
   test("5. セクション見出しが1回だけ表示される", () => {
-    const matches = html.match(/今、見落とさないために/g) ?? [];
+    const matches = html.match(/見落としがちなポイント/g) ?? [];
     assert.equal(matches.length, 1);
   });
 
@@ -106,7 +106,7 @@ describe("KnowledgeCardsSection: 1件", () => {
   });
 
   test("8. whyNowが表示される", () => {
-    assert.match(html, /今、確認したい理由：入院中で、支援の調整がまだ終わっていません。/);
+    assert.match(html, /確認すべき理由：入院中で、支援の調整がまだ終わっていません。/);
   });
 
   test("9. checkItemsがすべて表示される", () => {
@@ -142,7 +142,7 @@ describe("KnowledgeCardsSection: 2件", () => {
 
   test("14. 見出しはセクション全体で1回だけ", () => {
     const html = render([CARD_A, CARD_B], []);
-    const matches = html.match(/今、見落とさないために/g) ?? [];
+    const matches = html.match(/見落としがちなポイント/g) ?? [];
     assert.equal(matches.length, 1);
   });
 });
@@ -338,7 +338,7 @@ const CARD_A_WITH_SOURCES: PostKnowledgeCard = {
   id: DISCHARGE_SUPPORT_START_GAP.id,
   title: DISCHARGE_SUPPORT_START_GAP.title,
   cliff: DISCHARGE_SUPPORT_START_GAP.cliff,
-  whyNow: "入院中で、退院後の支援がまだ決まっていないためです。",
+  whyNow: "退院後の生活サポートがまだ決まっていないため、必要なサポートがいつから始まるか確認する必要があります。",
   checkItems: DISCHARGE_SUPPORT_START_GAP.checkItems,
   linkedContactIds: DISCHARGE_SUPPORT_START_GAP.linkedContactIds,
   sources: DISCHARGE_SUPPORT_START_GAP.sources,
@@ -351,8 +351,8 @@ const CARD_A_WITH_SOURCES: PostKnowledgeCard = {
 describe("Card A有効化前レビュー: Card A単独表示", () => {
   const html = render([CARD_A_WITH_SOURCES], [CONTACT_HOSPITAL]);
 
-  test("「今、見落とさないために」が1回だけ表示される", () => {
-    const matches = html.match(/今、見落とさないために/g) ?? [];
+  test("「見落としがちなポイント」が1回だけ表示される", () => {
+    const matches = html.match(/見落としがちなポイント/g) ?? [];
     assert.equal(matches.length, 1);
   });
 
@@ -371,7 +371,7 @@ describe("Card A有効化前レビュー: Card A単独表示", () => {
   });
 
   test("whyNowが表示される", () => {
-    assert.match(html, /今、確認したい理由：入院中で、退院後の支援がまだ決まっていないためです。/);
+    assert.match(html, /確認すべき理由：退院後の生活サポートがまだ決まっていないため、必要なサポートがいつから始まるか確認する必要があります。/);
   });
 
   test("Card Bのtitleは表示されない", () => {
@@ -480,17 +480,17 @@ describe("Card A有効化前レビュー: レスポンシブ構造（source確�
 // KnowledgeCardsSectionへ渡し、実際のパイプラインでの描画を確認する。
 
 describe("Card A本番有効化後: buildPostResult()の実データでの描画", () => {
-  test("Card A成立ケース: 「今、見落とさないために」が1回、title・cliff・checkItems・whyNow・出典2件が表示される", () => {
+  test("Card A成立ケース: 「見落としがちなポイント」が1回、title・cliff・checkItems・whyNow・出典2件が表示される", () => {
     const a = { c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged", c5: "not_discussed", c6: "no_home_issue", c7: "likely_sufficient", c8: "shared" } as const;
     const result = buildPostResult(a);
     assert.equal(result.knowledgeCards.length, 1, "この回答ではCard Aが1件返るはず");
 
     const html = render(result.knowledgeCards, result.contacts);
-    const headingMatches = html.match(/今、見落とさないために/g) ?? [];
+    const headingMatches = html.match(/見落としがちなポイント/g) ?? [];
     assert.equal(headingMatches.length, 1);
-    assert.match(html, /退院後の支援は、退院日と同じ日に始まるとは限りません/);
-    assert.match(html, /退院当日の移動手段/);
-    assert.match(html, /今、確認したい理由：/);
+    assert.match(html, /退院後の生活サポートに空白がないか確認しましょう/);
+    assert.match(html, /退院当日の移動手段は決まっていますか/);
+    assert.match(html, /確認すべき理由：/);
     assert.match(html, /参考情報/);
     assert.match(html, /疾病・事業及び在宅医療に係る医療体制について/);
     assert.match(html, /令和7年度地域の在宅医療の体制整備に向けた調査・連携支援事業/);
@@ -522,7 +522,7 @@ describe("Card A本番有効化後: buildPostResult()の実データでの描画
     assert.deepEqual(result.knowledgeCards, []);
     const html = render(result.knowledgeCards, result.contacts);
     assert.equal(html, "");
-    assert.doesNotMatch(html, /今、見落とさないために/);
+    assert.doesNotMatch(html, /見落としがちなポイント/);
     assert.doesNotMatch(html, /参考情報/);
   });
 });
@@ -536,7 +536,7 @@ const CARD_B_WITH_SOURCES: PostKnowledgeCard = {
   id: TRANSITION_MONTHLY_CASH_GAP.id,
   title: TRANSITION_MONTHLY_CASH_GAP.title,
   cliff: TRANSITION_MONTHLY_CASH_GAP.cliff,
-  whyNow: "家族が費用を負担する可能性があり、当面の支払い時期を早めに確認したい状況であるためです。",
+  whyNow: "今後の生活にかかる費用を確認する必要があるため、支払いがかさなる時期や、家族による費用負担がいつ必要になるかを早めに整理しておきましょう。",
   checkItems: TRANSITION_MONTHLY_CASH_GAP.checkItems,
   linkedContactIds: TRANSITION_MONTHLY_CASH_GAP.linkedContactIds,
   sources: TRANSITION_MONTHLY_CASH_GAP.sources,
@@ -551,14 +551,16 @@ const CONTACT_FP: PostContactCard = { id: "fp", name: "ファイナンシャル�
 describe("Card B有効化前レビュー: Card B単独表示", () => {
   const html = render([CARD_B_WITH_SOURCES], [CONTACT_FP]);
 
-  test("「今、見落とさないために」が1回だけ表示される", () => {
-    const matches = html.match(/今、見落とさないために/g) ?? [];
+  test("「見落としがちなポイント」が1回だけ表示される", () => {
+    const matches = html.match(/見落としがちなポイント/g) ?? [];
     assert.equal(matches.length, 1);
   });
 
-  test("Card Bのtitleが1回だけ表示される", () => {
+  test("Card Bのtitleが見出し（h3）として1回だけ表示される", () => {
+    // titleの文言はcliff内にも同じ語句が意図的に含まれるため（承認済みコピー）、
+    // タグ直付けパターンでh3要素内の出現だけを数える。
     const escaped = CARD_B_WITH_SOURCES.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const matches = html.match(new RegExp(escaped, "g")) ?? [];
+    const matches = html.match(new RegExp(`>${escaped}<`, "g")) ?? [];
     assert.equal(matches.length, 1);
   });
 
@@ -573,7 +575,7 @@ describe("Card B有効化前レビュー: Card B単独表示", () => {
   });
 
   test("whyNowが表示される", () => {
-    assert.match(html, /今、確認したい理由：家族が費用を負担する可能性があり、当面の支払い時期を早めに確認したい状況であるためです。/);
+    assert.match(html, /確認すべき理由：今後の生活にかかる費用を確認する必要があるため、支払いがかさなる時期や、家族による費用負担がいつ必要になるかを早めに整理しておきましょう。/);
   });
 
   test("出典3件が表示される（B1・B2・B3のorganization・title・url）", () => {
@@ -619,7 +621,7 @@ describe("Card B有効化前レビュー: A+B同時表示", () => {
   const html = render([CARD_A_WITH_SOURCES, CARD_B_WITH_SOURCES], [CONTACT_HOSPITAL, CONTACT_FP]);
 
   test("Knowledge Cardsの見出しは1回だけ", () => {
-    const matches = html.match(/今、見落とさないために/g) ?? [];
+    const matches = html.match(/見落としがちなポイント/g) ?? [];
     assert.equal(matches.length, 1);
   });
 
@@ -644,5 +646,77 @@ describe("Card B有効化前レビュー: A+B同時表示", () => {
 
   test("Card Cは表示されない", () => {
     assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+});
+
+// ---- Step7B: Card B本番有効化（docs/reviews/phase4.1-card-b-enablement-result.md） ----
+// buildPostResult()の実データ（本番registry、省略時）でCard Bの描画を確認する。
+// Card Aと同様、テスト用に組み立てたフィクスチャではなく本番と同じ経路の出力を使う。
+
+describe("Card B本番有効化後: buildPostResult()の実データでの描画", () => {
+  test("Card B（nonurgent）単独成立ケース: 「見落としがちなポイント」が1回、title・cliff・checkItems・whyNow・出典3件が表示される", () => {
+    const a = { c1: "discharged", c2: "mostly_settled", c3: "return_home", c4: "arranged", c5: "wants_home", c6: "no_home_issue", c7: "family_pays", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 1, "この回答ではCard Bが1件返るはず");
+    assert.equal(result.knowledgeCards[0]?.id, "transition_monthly_cash_gap");
+
+    const html = render(result.knowledgeCards, result.contacts);
+    const headingMatches = html.match(/見落としがちなポイント/g) ?? [];
+    assert.equal(headingMatches.length, 1);
+    assert.match(html, /家族による費用負担がいつ必要になるかも確認しておきましょう/);
+    assert.match(html, /毎月入ってくるお金はいくらですか/);
+    assert.match(html, /確認すべき理由：/);
+    assert.match(html, /参考情報/);
+    assert.match(html, /サービスにかかる利用料/);
+    assert.match(html, /介護サービスにかかる概算の料金を知りたい/);
+    assert.match(html, /ライフプランシミュレーター/);
+  });
+
+  test("Card B（nonurgent）単独成立ケース: Card A・Cのtitleは表示されない", () => {
+    const a = { c1: "discharged", c2: "mostly_settled", c3: "return_home", c4: "arranged", c5: "wants_home", c6: "no_home_issue", c7: "family_pays", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    const html = render(result.knowledgeCards, result.contacts);
+    assert.doesNotMatch(html, new RegExp(CARD_A.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("Card B（nonurgent）単独成立ケース: 一致する相談先だけ表示される（result.contactsとの積集合）", () => {
+    const a = { c1: "discharged", c2: "mostly_settled", c3: "return_home", c4: "arranged", c5: "wants_home", c6: "no_home_issue", c7: "family_pays", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    const html = render(result.knowledgeCards, result.contacts);
+    const linkedIds = result.knowledgeCards[0]?.linkedContactIds ?? [];
+    for (const contact of result.contacts) {
+      if (linkedIds.includes(contact.id as (typeof linkedIds)[number])) {
+        assert.match(html, new RegExp(contact.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      }
+    }
+  });
+
+  test("A+Card B（urgent）同時成立ケース: [A, B]の順で2件、Card Cは表示されない", () => {
+    const a = { c1: "hospitalized", c2: "within_7_days", c3: "undecided", c4: "not_arranged", c5: "not_discussed", c6: "no_home_issue", c7: "family_pays", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 2);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+
+    const html = render(result.knowledgeCards, result.contacts);
+    const headingMatches = html.match(/見落としがちなポイント/g) ?? [];
+    assert.equal(headingMatches.length, 1);
+    const indexA = html.indexOf(DISCHARGE_SUPPORT_START_GAP.title);
+    const indexB = html.indexOf(TRANSITION_MONTHLY_CASH_GAP.title);
+    assert.ok(indexA !== -1 && indexB !== -1 && indexA < indexB);
+    assert.doesNotMatch(html, new RegExp(CARD_C.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  test("Card B不成立ケース（familyContribution=false）: セクション全体が描画されない", () => {
+    const a = { c1: "discharged", c2: "mostly_settled", c3: "return_home", c4: "arranged", c5: "wants_home", c6: "no_home_issue", c7: "likely_sufficient", c8: "shared" } as const;
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+    const html = render(result.knowledgeCards, result.contacts);
+    assert.equal(html, "");
+    assert.doesNotMatch(html, /見落としがちなポイント/);
+    assert.doesNotMatch(html, /参考情報/);
   });
 });

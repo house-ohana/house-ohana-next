@@ -111,7 +111,7 @@ export default function KnowledgeCardsSection({ cards, contacts }: Props): React
     createElement(
       "h2",
       { id: "knowledge-cards-heading", className: "text-xl font-bold text-ohana-ink sm:text-2xl" },
-      "今、見落とさないために",
+      "見落としがちなポイント",
     ),
     createElement(
       "div",
@@ -121,12 +121,12 @@ export default function KnowledgeCardsSection({ cards, contacts }: Props): React
         return createElement(
           "article",
           { key: card.id, className: "flex flex-col gap-3 rounded-2xl border border-ohana-beige-dark bg-ohana-white p-5 sm:p-6" },
-          createElement("h3", { className: "text-lg font-bold text-ohana-ink" }, card.title),
+          createElement("h3", { className: "text-lg font-bold text-ohana-ink text-balance" }, card.title),
           createElement("p", { className: "text-base leading-loose text-ohana-ink sm:text-lg" }, card.cliff),
           createElement(
             "p",
             { className: "text-sm leading-loose text-ohana-ink/80 sm:text-base" },
-            `今、確認したい理由：${card.whyNow}`,
+            `確認すべき理由：${card.whyNow}`,
           ),
           renderCheckItems(card.checkItems),
           renderContacts(contactsForCard),

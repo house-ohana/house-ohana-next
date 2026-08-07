@@ -55,20 +55,17 @@ describe("knowledgeCards content: 3カードの基本要件", () => {
   });
 
   test("Card Bのタイトルが確定文言（レビュー承認後）と一致する", () => {
-    assert.equal(
-      TRANSITION_MONTHLY_CASH_GAP.title,
-      "家族が費用を負担する可能性がある場合でも、総額だけでは、負担する時期までは分かりません",
-    );
+    assert.equal(TRANSITION_MONTHLY_CASH_GAP.title, "家族による費用負担がいつ必要になるかも確認しておきましょう");
   });
 
   test("Card Bのタイトルに旧文言が残っていない", () => {
     assert.notEqual(TRANSITION_MONTHLY_CASH_GAP.title, "費用の総額だけでは、家族が負担する時期までは分かりません");
   });
 
-  test("Card Bのcliffは変更されていない", () => {
+  test("Card Bのcliffが確定文言（コピーレビュー承認後）と一致する", () => {
     assert.equal(
       TRANSITION_MONTHLY_CASH_GAP.cliff,
-      "家族が費用を負担する可能性がある場合でも、総額だけでは、支払いが重なる月や家族の立替えが始まる時期までは分かりません。今後3か月を月ごとに分けて確認します。",
+      "毎月の収入と支出だけでなく、一時的に発生する費用や、家族による費用負担がいつ必要になるかも確認しておきましょう。今後3か月間の支出を月ごとに整理すると、支払いがかさなる時期を把握しやすくなります。",
     );
   });
 
@@ -76,12 +73,12 @@ describe("knowledgeCards content: 3カードの基本要件", () => {
     assert.doesNotMatch(TRANSITION_MONTHLY_CASH_GAP.cliff, /必ず不足|必ず立替え|絶対に/);
   });
 
-  test("Card BのcheckItemsは変更されていない", () => {
+  test("Card BのcheckItemsが確定文言（コピーレビュー承認後）と一致する", () => {
     assert.deepEqual(TRANSITION_MONTHLY_CASH_GAP.checkItems, [
-      "毎月入るお金",
-      "毎月続く支出",
-      "その月だけ発生する支出",
-      "家族が支払う予定の費用と開始月",
+      "毎月入ってくるお金はいくらですか",
+      "毎月かかる支出はいくらですか",
+      "その月だけかかる特別な支出はありますか",
+      "家族による費用負担は、いつから必要になりそうですか",
     ]);
   });
 
@@ -89,12 +86,12 @@ describe("knowledgeCards content: 3カードの基本要件", () => {
     assert.deepEqual(TRANSITION_MONTHLY_CASH_GAP.linkedContactIds, ["fp"]);
   });
 
-  test("Card Aのtitleは変更されていない", () => {
-    assert.equal(DISCHARGE_SUPPORT_START_GAP.title, "退院後の支援は、退院日と同じ日に始まるとは限りません");
+  test("Card Aのtitleが確定文言（コピーレビュー承認後）と一致する", () => {
+    assert.equal(DISCHARGE_SUPPORT_START_GAP.title, "退院後の生活サポートに空白がないか確認しましょう");
   });
 
-  test("Card Cのtitleは変更されていない", () => {
-    assert.equal(HOME_OWNERSHIP_INTENT_GAP.title, "家の方針が決まっても、名義と本人の意向が揃っているとは限りません");
+  test("Card Cのtitleが確定文言（コピーレビュー承認後）と一致する", () => {
+    assert.equal(HOME_OWNERSHIP_INTENT_GAP.title, "家のことを進める前に、名義と本人の意向を確認しましょう");
   });
 
   test("Card CのlinkedContactIdsがlegalだけである", () => {
@@ -121,10 +118,10 @@ describe("knowledgeCards registry: enabledの分離", () => {
     }
   });
 
-  test("Card AだけenabledTrue、Card B・Cはenabled=false（2026-08-06 Card A有効化後の正式状態）", () => {
+  test("Card A・BがenabledTrue、Card Cはenabled=false（2026-08-06 Card B有効化後の正式状態）", () => {
     const byId = new Map(KNOWLEDGE_CARD_REGISTRY.map((entry) => [entry.content.id, entry.enabled] as const));
     assert.equal(byId.get("discharge_support_start_gap"), true);
-    assert.equal(byId.get("transition_monthly_cash_gap"), false);
+    assert.equal(byId.get("transition_monthly_cash_gap"), true);
     assert.equal(byId.get("home_ownership_intent_gap"), false);
   });
 
@@ -334,9 +331,9 @@ describe("knowledgeCards: readinessとregistryの分離", () => {
     }
   });
 
-  test("readyとenabledは独立した状態であり、3カードともready=trueだがenabledはCard Aだけtrue", () => {
+  test("readyとenabledは独立した状態であり、3カードともready=trueだがenabledはCard A・Bだけtrue", () => {
     // content.tsの出典登録（ready）とregistry.tsのenabledは独立している（docs/03 第4章）。
-    // 2026-08-06時点の正式状態: 3カードともready=true。Card Aだけenabled=true、Card B・Cはfalse。
+    // 2026-08-06時点の正式状態: 3カードともready=true。Card A・Bがenabled=true、Card Cはfalse。
     const state = KNOWLEDGE_CARD_REGISTRY.map((entry) => ({
       id: entry.content.id,
       ready: isContentReadyToEnable(entry.content),
@@ -344,7 +341,7 @@ describe("knowledgeCards: readinessとregistryの分離", () => {
     }));
     assert.deepEqual(state, [
       { id: "discharge_support_start_gap", ready: true, enabled: true },
-      { id: "transition_monthly_cash_gap", ready: true, enabled: false },
+      { id: "transition_monthly_cash_gap", ready: true, enabled: true },
       { id: "home_ownership_intent_gap", ready: true, enabled: false },
     ]);
   });

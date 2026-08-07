@@ -9,14 +9,14 @@ import type { KnowledgeCardContent } from "./types";
 
 export const DISCHARGE_SUPPORT_START_GAP: KnowledgeCardContent = {
   id: "discharge_support_start_gap",
-  title: "退院後の支援は、退院日と同じ日に始まるとは限りません",
+  title: "退院後の生活サポートに空白がないか確認しましょう",
   cliff:
-    "退院後に必要な移動、見守り、医療・介護・生活支援が、退院当日からすべて始まるとは限りません。最初の数日に支援の空白がないかを、退院前に確認します。",
+    "退院後の移動手段や見守り、医療・介護など、生活に必要なサポートが退院当日から始まる予定になっていますか？必要なサポートが途切れる期間がないか、退院前に確認しましょう。",
   checkItems: [
-    "退院当日の移動手段",
-    "退院当日から最初の数日を誰が支えるか",
-    "医療・介護・生活支援が始まる日",
-    "まだ決まっていない事項の担当者と確認期限",
+    "退院当日の移動手段は決まっていますか",
+    "退院当日から数日間、誰が支える予定ですか",
+    "医療・介護など、必要なサポートはいつから始まりますか",
+    "まだ決まっていないことについて、誰が・いつまでに確認しますか",
   ],
   linkedContactIds: ["hospital", "regional_support", "care_manager"],
   sources: [
@@ -39,10 +39,15 @@ export const DISCHARGE_SUPPORT_START_GAP: KnowledgeCardContent = {
 
 export const TRANSITION_MONTHLY_CASH_GAP: KnowledgeCardContent = {
   id: "transition_monthly_cash_gap",
-  title: "家族が費用を負担する可能性がある場合でも、総額だけでは、負担する時期までは分かりません",
+  title: "家族による費用負担がいつ必要になるかも確認しておきましょう",
   cliff:
-    "家族が費用を負担する可能性がある場合でも、総額だけでは、支払いが重なる月や家族の立替えが始まる時期までは分かりません。今後3か月を月ごとに分けて確認します。",
-  checkItems: ["毎月入るお金", "毎月続く支出", "その月だけ発生する支出", "家族が支払う予定の費用と開始月"],
+    "毎月の収入と支出だけでなく、一時的に発生する費用や、家族による費用負担がいつ必要になるかも確認しておきましょう。今後3か月間の支出を月ごとに整理すると、支払いがかさなる時期を把握しやすくなります。",
+  checkItems: [
+    "毎月入ってくるお金はいくらですか",
+    "毎月かかる支出はいくらですか",
+    "その月だけかかる特別な支出はありますか",
+    "家族による費用負担は、いつから必要になりそうですか",
+  ],
   linkedContactIds: ["fp"],
   sources: [
     {
@@ -70,10 +75,15 @@ export const TRANSITION_MONTHLY_CASH_GAP: KnowledgeCardContent = {
 
 export const HOME_OWNERSHIP_INTENT_GAP: KnowledgeCardContent = {
   id: "home_ownership_intent_gap",
-  title: "家の方針が決まっても、名義と本人の意向が揃っているとは限りません",
+  title: "家のことを進める前に、名義と本人の意向を確認しましょう",
   cliff:
-    "売却・賃貸・解体などの方向が決まっていても、名義、共有者、本人の理解・意向など、手続きの前提となる確認事項が残っている可能性があります。",
-  checkItems: ["登記上の名義", "共有名義の場合の共有者", "本人へ説明した内容と本人の意向", "契約前に確認する専門家"],
+    "家をどうするか具体的に進める前に、登記上の名義と本人の意向を確認しましょう。確認できていない点がある場合は、手続きや相談を進める前に整理しておきましょう。",
+  checkItems: [
+    "登記上の名義は誰になっていますか",
+    "共有名義の場合、共有者は誰ですか",
+    "本人にはどう説明していて、本人はどう考えていますか",
+    "契約を進める前に、誰に相談しますか",
+  ],
   linkedContactIds: ["legal"],
   sources: [
     {

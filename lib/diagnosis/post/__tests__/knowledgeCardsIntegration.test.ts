@@ -35,7 +35,7 @@ function answers(overrides: Partial<PostValidAnswers>): PostValidAnswers {
   return { ...BASELINE, ...overrides };
 }
 
-describe("buildPostResult().knowledgeCards: 本番registry（Card Aだけenabled、2026-08-06〜）", () => {
+describe("buildPostResult().knowledgeCards: 本番registry（Card A・Bがenabled、2026-08-06〜）", () => {
   test("1. m=post結果にknowledgeCardsプロパティが存在する", () => {
     const result = buildPostResult(answers({}));
     assert.ok("knowledgeCards" in result);
@@ -46,7 +46,7 @@ describe("buildPostResult().knowledgeCards: 本番registry（Card Aだけenabled
     assert.ok(Array.isArray(result.knowledgeCards));
   });
 
-  test("3. 本番registryが全件disabledのため空配列である", () => {
+  test("3. BASELINEの回答ではCard A・Bいずれの条件も不成立のため空配列である", () => {
     const result = buildPostResult(answers({}));
     assert.deepEqual(result.knowledgeCards, []);
   });
@@ -57,9 +57,12 @@ describe("buildPostResult().knowledgeCards: 本番registry（Card Aだけenabled
     assert.equal(result.knowledgeCards[0]?.id, "discharge_support_start_gap");
   });
 
-  test("5. familyContribution=trueの回答でも空配列", () => {
+  test("5. familyContribution=trueの回答では、Card B（nonurgent）が1件返る（2026-08-06有効化後の正式状態）", () => {
     const result = buildPostResult(answers({ c7: "family_pays" }));
-    assert.deepEqual(result.knowledgeCards, []);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards[0]?.id, "transition_monthly_cash_gap");
+    assert.equal(result.knowledgeCards[0]?.rank, 30);
+    assert.equal(result.knowledgeCards[0]?.urgency, "medium");
   });
 
   test("6. homeActionExpected=trueかつcontractConcern=trueでも空配列", () => {
@@ -67,7 +70,7 @@ describe("buildPostResult().knowledgeCards: 本番registry（Card Aだけenabled
     assert.deepEqual(result.knowledgeCards, []);
   });
 
-  test("7. 複数matcherが発火する回答でも、本番registryではCard Aだけ返る（Card B・Cはenabled=falseのまま）", () => {
+  test("7. 複数matcherが発火する回答では、本番registryでA・Bが返る（urgent B, Cはenabled=falseなので混入しない）", () => {
     const result = buildPostResult(
       answers({
         c1: "hospitalized",
@@ -81,11 +84,13 @@ describe("buildPostResult().knowledgeCards: 本番registry（Card Aだけenabled
         ct1: "fluctuates",
       }),
     );
-    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards.length, 2);
     assert.deepEqual(
       result.knowledgeCards.map((c) => c.id),
-      ["discharge_support_start_gap"],
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
     );
+    assert.equal(result.knowledgeCards[1]?.rank, 15);
+    assert.equal(result.knowledgeCards[1]?.urgency, "high");
   });
 
   test("8. 同じAnswersから常に同じknowledgeCardsを返す", () => {
@@ -221,7 +226,7 @@ describe("URL・schema回帰: knowledgeCards追加がURL互換性へ影響しな
     assert.ok(Array.isArray(result.knowledgeCards));
   });
 
-  test("再生成したPostResult.knowledgeCardsは空配列", () => {
+  test("再生成したPostResult.knowledgeCardsはCard B（nonurgent）1件", () => {
     const a = answers({ c7: "family_pays" });
     const encoded = encodePostAnswers(a);
     const params: PostSearchParams = {};
@@ -232,7 +237,8 @@ describe("URL・schema回帰: knowledgeCards追加がURL互換性へ影響しな
     assert.equal(decoded.ok, true);
     if (!decoded.ok) return;
     const result = buildPostResult(decoded.answers);
-    assert.deepEqual(result.knowledgeCards, []);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards[0]?.id, "transition_monthly_cash_gap");
   });
 
   test("POST_SCHEMA_VERSIONは変更しない（4.0のまま）", () => {
@@ -287,10 +293,13 @@ describe("Step6A: knowledgeCards.linkedContactIdsとcontactsの積集合が成�
         assert.ok(contactIds.has(linkedId), `${card.id}: ${linkedId} がcontactsに存在しない`);
       }
     }
-    // 本番registryはCard Aだけenabledのため（2026-08-06〜）、この不変条件は
-    // knowledgeCards=[Card A]という実データのもとで成立することを確認する。
-    assert.equal(result.knowledgeCards.length, 1);
-    assert.equal(result.knowledgeCards[0]?.id, "discharge_support_start_gap");
+    // 本番registryはCard A・Bがenabledのため（2026-08-06〜）、この不変条件は
+    // knowledgeCards=[Card A, Card B(urgent)]という実データのもとで成立することを確認する。
+    assert.equal(result.knowledgeCards.length, 2);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
   });
 
   test("enabledなregistry・実際のbuildContacts結果で積集合が成立する（Card Aがhospitalと一致）", () => {
@@ -435,10 +444,11 @@ describe("Card A本番有効化後: 表示ケース・非表示ケース", () =>
     assert.deepEqual(result.knowledgeCards, []);
   });
 
-  test("非表示ケース: Card Bのみ成立（Card A不成立）→ knowledgeCards=[]", () => {
+  test("Card Bのみ成立（Card A不成立）→ 2026-08-06のCard B有効化後はCard Bだけの1件", () => {
     const a = answers({ c1: "discharged", c7: "family_pays" });
     const result = buildPostResult(a);
-    assert.deepEqual(result.knowledgeCards, []);
+    assert.equal(result.knowledgeCards.length, 1);
+    assert.equal(result.knowledgeCards[0]?.id, "transition_monthly_cash_gap");
   });
 
   test("非表示ケース: Card Cのみ成立（Card A不成立）→ knowledgeCards=[]", () => {
@@ -513,7 +523,7 @@ describe("Card B有効化前レビュー: 実回答ケース（テスト用regis
     assert.equal(cards[0]?.id, "transition_monthly_cash_gap");
   });
 
-  test("本番回帰: 本番registry（省略時）では、現在Aだけが表示され、B・Cは表示されない", () => {
+  test("本番回帰: 本番registry（省略時）では、2026-08-06のCard B有効化後はA・Bが表示され、Cは表示されない", () => {
     const a = answers({
       c1: "hospitalized",
       c2: "within_7_days",
@@ -526,10 +536,112 @@ describe("Card B有効化前レビュー: 実回答ケース（テスト用regis
       ct1: "fluctuates",
     });
     const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 2);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+  });
+});
+
+// ---- Step7B: Card B本番有効化（docs/reviews/phase4.1-card-b-enablement-result.md） ----
+// ここから先は、registryを一切注入しない（省略＝本番KNOWLEDGE_CARD_REGISTRYを使う）
+// 呼び出しだけを対象とし、本番の実際の挙動を直接確認する。
+
+describe("Card B本番有効化後: 本番registry（省略）での確認", () => {
+  test("表示ケース: Card B（nonurgent）単独成立 → knowledgeCardsはCard Bだけの1件", () => {
+    const a = answers({ c7: "family_pays" });
+    const result = buildPostResult(a);
+
     assert.equal(result.knowledgeCards.length, 1);
     assert.deepEqual(
       result.knowledgeCards.map((c) => c.id),
-      ["discharge_support_start_gap"],
+      ["transition_monthly_cash_gap"],
     );
+
+    // linkedContactIdsはresult.contactsの部分集合である
+    const contactIds = new Set(result.contacts.map((c) => c.id));
+    for (const linkedId of result.knowledgeCards[0]?.linkedContactIds ?? []) {
+      assert.ok(contactIds.has(linkedId));
+    }
+  });
+
+  test("Card Bのために、firstAction・nextActions・contactsが変化しない（Card B単独成立ケース）", () => {
+    const a = answers({ c7: "family_pays" });
+    const v = computePostVariables(a);
+    const result = buildPostResult(a);
+    assert.deepEqual(result.firstAction, buildFirstAndNextActions(a, v).firstAction);
+    assert.deepEqual(result.nextActions, buildFirstAndNextActions(a, v).nextActions);
+    assert.deepEqual(result.contacts, buildContacts(a, v));
+  });
+
+  test("表示ケース: Card A＋Card B（urgent）同時成立 → [A, B]の順で2件、Cは混入しない", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "undecided",
+      c4: "not_arranged",
+      c7: "family_pays",
+    });
+    const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 2);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+    assert.equal(result.knowledgeCards[1]?.rank, 15);
+    assert.equal(result.knowledgeCards[1]?.urgency, "high");
+  });
+
+  test("Card Bのために、firstAction・nextActions・contactsが変化しない（A+B同時成立ケース）", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "undecided",
+      c4: "not_arranged",
+      c7: "family_pays",
+    });
+    const v = computePostVariables(a);
+    const result = buildPostResult(a);
+    assert.deepEqual(result.firstAction, buildFirstAndNextActions(a, v).firstAction);
+    assert.deepEqual(result.nextActions, buildFirstAndNextActions(a, v).nextActions);
+    assert.deepEqual(result.contacts, buildContacts(a, v));
+  });
+
+  test("A・B・C全部の条件が成立する回答でも、Cはenabled=falseのため混入せず[A, B]のまま", () => {
+    const a = answers({
+      c1: "hospitalized",
+      c2: "within_7_days",
+      c3: "undecided",
+      c4: "not_arranged",
+      c6: "will_be_vacant",
+      c7: "family_pays",
+      h1: "sell",
+      h2: "sole_owner",
+      ct1: "fluctuates",
+    });
+    const result = buildPostResult(a);
+    assert.equal(result.knowledgeCards.length, 2);
+    assert.deepEqual(
+      result.knowledgeCards.map((c) => c.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
+    assert.ok(!result.knowledgeCards.some((c) => c.id === "home_ownership_intent_gap"));
+  });
+
+  test("非表示ケース: familyContribution不成立（Card A・Bともに不成立）→ knowledgeCards=[]", () => {
+    const a = answers({});
+    const result = buildPostResult(a);
+    assert.deepEqual(result.knowledgeCards, []);
+  });
+
+  test("最終contactsとの積集合: fpだけがcontactsにある場合、Card Bのlinked先はfpだけになる", () => {
+    const a = answers({ c7: "family_pays" });
+    const result = buildPostResult(a);
+    const cardB = result.knowledgeCards.find((c) => c.id === "transition_monthly_cash_gap");
+    assert.ok(cardB);
+    for (const linkedId of cardB.linkedContactIds) {
+      assert.ok(TRANSITION_MONTHLY_CASH_GAP.linkedContactIds.includes(linkedId));
+    }
   });
 });

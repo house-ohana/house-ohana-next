@@ -47,31 +47,36 @@ const ALL_MATCHED_TRUE: readonly KnowledgeCardMatch[] = [
 
 describe("selectKnowledgeCards: 本番registryとenabled", () => {
   // 2026-08-06にCard A（discharge_support_start_gap）がenabled=trueへ変更された
-  // （docs/reviews/phase4.1-card-a-enablement-result.md）。Card B・Cはenabled=falseのまま。
-  test("1. 本番registryはCard Aだけenabledなので、3カードともmatched=trueならCard Aだけ返る", () => {
+  // （docs/reviews/phase4.1-card-a-enablement-result.md）。
+  // 2026-08-06にCard B（transition_monthly_cash_gap）がenabled=trueへ変更された
+  // （docs/reviews/phase4.1-card-b-enablement-result.md）。Card Cはenabled=falseのまま。
+  test("1. 本番registryはCard A・Bがenabledなので、3カードともmatched=trueならA, Bがrank順で返る（Cはenabled=falseなので出ない）", () => {
     const result = selectKnowledgeCards(ALL_MATCHED_TRUE, KNOWLEDGE_CARD_REGISTRY);
     assert.deepEqual(
       result.map((r) => r.id),
-      ["discharge_support_start_gap"],
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
     );
   });
 
-  test("引数省略時も本番registryを使う（同じくCard Aだけ返る）", () => {
+  test("引数省略時も本番registryを使う（同じくA, Bが返る）", () => {
     const result = selectKnowledgeCards(ALL_MATCHED_TRUE);
     assert.deepEqual(
       result.map((r) => r.id),
-      ["discharge_support_start_gap"],
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
     );
   });
 
-  test("Card Aがmatched=falseなら、本番registryでも空配列（Card B・Cはmatched=trueでも出ない）", () => {
+  test("Card Aがmatched=falseでも、本番registryでBはenabledなのでBだけ返る（Cはenabled=falseなので出ない）", () => {
     const matches = [
       matchedFalse("discharge_support_start_gap"),
       matchedTrue("transition_monthly_cash_gap", 30),
       matchedTrue("home_ownership_intent_gap", 20),
     ];
     const result = selectKnowledgeCards(matches, KNOWLEDGE_CARD_REGISTRY);
-    assert.deepEqual(result, []);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["transition_monthly_cash_gap"],
+    );
   });
 
   test("2. matched=falseだけなら空配列", () => {

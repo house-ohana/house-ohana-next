@@ -421,12 +421,16 @@ describe("buildKnowledgeCardsForPostResult: PostResult用ラッパー", () => {
     assert.deepEqual(buildKnowledgeCardsForPostResult(a, v, contacts, registry), buildKnowledgeCardsForPostResult(a, v, contacts, registry));
   });
 
-  test("registry省略時は本番KNOWLEDGE_CARD_REGISTRYを使用する（Card Aだけenabledなので1件返る）", () => {
+  test("registry省略時は本番KNOWLEDGE_CARD_REGISTRYを使用する（Card A・Bがenabledなので2件返る、2026-08-06有効化後）", () => {
     const a = ALL_THREE_FIRE_URGENT;
     const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), [contactFixture("hospital")]);
-    assert.equal(result.length, 1);
-    assert.equal(result[0]?.id, "discharge_support_start_gap");
+    assert.equal(result.length, 2);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
     assert.deepEqual(result[0]?.linkedContactIds, ["hospital"]);
+    assert.deepEqual(result[1]?.linkedContactIds, []);
   });
 
   test("入力contactsを変更しない", () => {
@@ -550,10 +554,14 @@ describe("Card A本番有効化後: 本番registry（省略）での確認", () 
     assert.equal(card.sources.length, 2);
   });
 
-  test("Card Aだけenabledでも戻り値は最大1件（selectorのmax2件制限を再実装していない）", () => {
+  test("A・B・C全部発火する回答でも、本番registryでは戻り値は最大2件（selectorのmax2件制限を再実装していない、2026-08-06有効化後はA・Bが返る）", () => {
     const a = ALL_THREE_FIRE_URGENT;
     const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
-    assert.ok(result.length <= 1);
+    assert.ok(result.length <= 2);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
   });
 
   test("入院中ではない場合は空配列", () => {
@@ -568,10 +576,13 @@ describe("Card A本番有効化後: 本番registry（省略）での確認", () 
     assert.deepEqual(result, []);
   });
 
-  test("Card Bの条件だけ成立しても空配列（Card Bはenabled=falseのまま）", () => {
+  test("Card Bの条件だけ成立すると、2026-08-06有効化後はCard B（nonurgent）が1件返る", () => {
     const a = answers({ c1: "discharged", c7: "family_pays" });
     const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
-    assert.deepEqual(result, []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "transition_monthly_cash_gap");
+    assert.equal(result[0]?.rank, 30);
+    assert.equal(result[0]?.urgency, "medium");
   });
 
   test("Card Cの条件だけ成立しても空配列（Card Cはenabled=falseのまま）", () => {
@@ -580,7 +591,7 @@ describe("Card A本番有効化後: 本番registry（省略）での確認", () 
     assert.deepEqual(result, []);
   });
 
-  test("Card B・C両方の条件が成立しても、Card Aが不成立なら空配列", () => {
+  test("Card B・C両方の条件が成立し、Card Aが不成立でも、2026-08-06有効化後はCard Bだけ（Cはenabled=falseなので混入しない）", () => {
     const a = answers({
       c1: "discharged",
       c6: "will_be_vacant",
@@ -589,7 +600,8 @@ describe("Card A本番有効化後: 本番registry（省略）での確認", () 
       ct1: "fluctuates",
     });
     const result = buildKnowledgeCardsForPostResult(a, computePostVariables(a), []);
-    assert.deepEqual(result, []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "transition_monthly_cash_gap");
   });
 
   test("最終contactsとの積集合: hospitalとcare_managerだけがcontactsにある場合、その2件だけ元の順序で残る", () => {
@@ -746,13 +758,16 @@ describe("Card B有効化前レビュー: 単独enabled時の内容一致", () =
     assert.deepEqual(result[0]?.linkedContactIds, []);
   });
 
-  test("本番registry（省略時）ではCard B条件成立時でも空配列（Card Bはenabled=falseのまま）", () => {
+  test("本番registry（省略時）では、2026-08-06有効化後はCard B urgent条件成立時に1件返る", () => {
     const result = buildKnowledgeCardsForPostResult(
       CARD_B_URGENT_ONLY,
       computePostVariables(CARD_B_URGENT_ONLY),
       [],
     );
-    assert.deepEqual(result, []);
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.id, "transition_monthly_cash_gap");
+    assert.equal(result[0]?.rank, 15);
+    assert.equal(result[0]?.urgency, "high");
   });
 });
 
@@ -845,9 +860,12 @@ describe("Card A+B競合ケース（docs/reviews/phase4.1-card-b-enablement-revi
     assert.deepEqual(result[1]?.linkedContactIds, []);
   });
 
-  test("本番回帰: A+B同時成立の回答でも、本番registry（省略時）ではCard Aだけ返る", () => {
+  test("本番回帰: A+B同時成立の回答では、2026-08-06有効化後は本番registry（省略時）で[A, B]の順に2件返る", () => {
     const result = buildKnowledgeCardsForPostResult(AB_URGENT, computePostVariables(AB_URGENT), []);
-    assert.equal(result.length, 1);
-    assert.equal(result[0]?.id, "discharge_support_start_gap");
+    assert.equal(result.length, 2);
+    assert.deepEqual(
+      result.map((r) => r.id),
+      ["discharge_support_start_gap", "transition_monthly_cash_gap"],
+    );
   });
 });
